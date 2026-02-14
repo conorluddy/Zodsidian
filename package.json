@@ -6,9 +6,17 @@
     "build": "pnpm -r build",
     "test": "vitest run",
     "lint": "prettier --check .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prepare": "husky"
   },
+  "lint-staged": {
+    "*.{ts,js,mjs,json,md,yaml}": "prettier --write",
+    "*.ts": "bash -c 'pnpm test && pnpm -r build'"
+  },
+  "packageManager": "pnpm@10.29.2",
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.4.2",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
