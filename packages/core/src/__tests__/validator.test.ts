@@ -31,9 +31,7 @@ describe("validateFrontmatter", () => {
 
   it("reports schema validation errors", () => {
     const issues = validateFrontmatter({ type: "project", id: "proj-1" });
-    expect(issues.some((i) => i.code === IssueCode.FM_SCHEMA_INVALID)).toBe(
-      true,
-    );
+    expect(issues.some((i) => i.code === IssueCode.FM_SCHEMA_INVALID)).toBe(true);
   });
 
   it("rejects unknown keys with strict schema", () => {

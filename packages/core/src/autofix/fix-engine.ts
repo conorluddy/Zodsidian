@@ -12,10 +12,7 @@ export interface FixResult {
   changed: boolean;
 }
 
-export function applyFixes(
-  fileContent: string,
-  options: FixOptions = {},
-): FixResult {
+export function applyFixes(fileContent: string, options: FixOptions = {}): FixResult {
   const parsed = parseFrontmatter(fileContent);
   if (!parsed.data || typeof parsed.data !== "object") {
     return { content: fileContent, changed: false };

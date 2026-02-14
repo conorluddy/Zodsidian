@@ -27,12 +27,10 @@ export class ZodsidianSettingTab extends PluginSettingTab {
       .setName("Validate on save")
       .setDesc("Automatically validate frontmatter when saving a file")
       .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.validateOnSave)
-          .onChange(async (value) => {
-            this.plugin.settings.validateOnSave = value;
-            await this.plugin.saveSettings();
-          }),
+        toggle.setValue(this.plugin.settings.validateOnSave).onChange(async (value) => {
+          this.plugin.settings.validateOnSave = value;
+          await this.plugin.saveSettings();
+        }),
       );
   }
 }

@@ -23,7 +23,10 @@ export async function validateCommand(dir: string): Promise<void> {
         files.find((f) => f.filePath === filePath)!.content,
       );
       const issues = parsed.data
-        ? [...parsed.issues, ...validateFrontmatter(parsed.data as Record<string, unknown>)]
+        ? [
+            ...parsed.issues,
+            ...validateFrontmatter(parsed.data as Record<string, unknown>),
+          ]
         : parsed.issues;
       for (const issue of issues) {
         printIssue(filePath, issue);

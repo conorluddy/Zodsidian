@@ -9,10 +9,7 @@ interface FixCommandOptions {
   dryRun?: boolean;
 }
 
-export async function fixCommand(
-  dir: string,
-  options: FixCommandOptions,
-): Promise<void> {
+export async function fixCommand(dir: string, options: FixCommandOptions): Promise<void> {
   loadSchemas();
   const files = await walkMarkdownFiles(dir);
   let fixedCount = 0;

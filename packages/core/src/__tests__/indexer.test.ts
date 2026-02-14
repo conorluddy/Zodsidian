@@ -68,9 +68,7 @@ describe("validateVault", () => {
     const index = buildVaultIndex(files);
     const result = validateVault(index);
     const allIssues = [...result.issues.values()].flat();
-    expect(allIssues.some((i) => i.code === IssueCode.VAULT_DUPLICATE_ID)).toBe(
-      true,
-    );
+    expect(allIssues.some((i) => i.code === IssueCode.VAULT_DUPLICATE_ID)).toBe(true);
   });
 
   it("detects missing references", () => {
@@ -91,8 +89,8 @@ outcome: Rejected
     const index = buildVaultIndex(files);
     const result = validateVault(index);
     const allIssues = [...result.issues.values()].flat();
-    expect(
-      allIssues.some((i) => i.code === IssueCode.VAULT_MISSING_REFERENCE),
-    ).toBe(true);
+    expect(allIssues.some((i) => i.code === IssueCode.VAULT_MISSING_REFERENCE)).toBe(
+      true,
+    );
   });
 });

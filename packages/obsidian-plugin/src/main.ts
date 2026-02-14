@@ -1,16 +1,10 @@
 import { Plugin } from "obsidian";
-import {
-  DEFAULT_SETTINGS,
-  type ZodsidianSettings,
-} from "./settings/settings.js";
+import { DEFAULT_SETTINGS, type ZodsidianSettings } from "./settings/settings.js";
 import { ZodsidianSettingTab } from "./settings/settings-tab.js";
 import { VaultAdapter } from "./services/vault-adapter.js";
 import { ValidationService } from "./services/validation-service.js";
 import { StatusBarManager } from "./ui/status-bar.js";
-import {
-  VALIDATION_VIEW_TYPE,
-  ValidationView,
-} from "./ui/validation-view.js";
+import { VALIDATION_VIEW_TYPE, ValidationView } from "./ui/validation-view.js";
 import { registerCommands } from "./commands/plugin-commands.js";
 
 export default class ZodsidianPlugin extends Plugin {
@@ -26,10 +20,7 @@ export default class ZodsidianPlugin extends Plugin {
     this.validationService = new ValidationService(this.vaultAdapter);
     this.statusBar = new StatusBarManager(this);
 
-    this.registerView(
-      VALIDATION_VIEW_TYPE,
-      (leaf) => new ValidationView(leaf),
-    );
+    this.registerView(VALIDATION_VIEW_TYPE, (leaf) => new ValidationView(leaf));
 
     this.addSettingTab(new ZodsidianSettingTab(this.app, this));
     registerCommands(this);
@@ -56,11 +47,7 @@ export default class ZodsidianPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    this.settings = Object.assign(
-      {},
-      DEFAULT_SETTINGS,
-      await this.loadData(),
-    );
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
   }
 
   async saveSettings(): Promise<void> {

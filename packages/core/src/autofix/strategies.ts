@@ -13,9 +13,7 @@ export const sortKeysStrategy: FixStrategy = (data) => {
   return sortKeys(data);
 };
 
-export const removeUnknownKeys = (
-  allowedKeys: Set<string>,
-): FixStrategy => {
+export const removeUnknownKeys = (allowedKeys: Set<string>): FixStrategy => {
   return (data) => {
     const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {

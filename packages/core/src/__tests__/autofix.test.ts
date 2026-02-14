@@ -11,13 +11,7 @@ describe("sortKeys", () => {
       status: "active",
     };
     const sorted = sortKeys(data);
-    expect(Object.keys(sorted)).toEqual([
-      "type",
-      "id",
-      "title",
-      "status",
-      "tags",
-    ]);
+    expect(Object.keys(sorted)).toEqual(["type", "id", "title", "status", "tags"]);
   });
 
   it("appends unknown keys at the end", () => {

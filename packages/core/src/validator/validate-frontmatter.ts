@@ -24,9 +24,7 @@ function mapZodIssue(issue: ZodIssue): ValidationIssue {
   };
 }
 
-export function validateFrontmatter(
-  data: Record<string, unknown>,
-): ValidationIssue[] {
+export function validateFrontmatter(data: Record<string, unknown>): ValidationIssue[] {
   const type = data.type;
 
   if (typeof type !== "string" || type.length === 0) {

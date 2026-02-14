@@ -23,9 +23,7 @@ export class ValidationService {
       return parsed.issues;
     }
 
-    const schemaIssues = validateFrontmatter(
-      parsed.data as Record<string, unknown>,
-    );
+    const schemaIssues = validateFrontmatter(parsed.data as Record<string, unknown>);
     const allIssues = [...parsed.issues, ...schemaIssues];
     this.cache.set(file.path, allIssues);
     return allIssues;

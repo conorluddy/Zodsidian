@@ -1,9 +1,6 @@
 import type { ValidationIssue, VaultStats } from "../types/index.js";
 
-export function formatIssue(
-  filePath: string,
-  issue: ValidationIssue,
-): string {
+export function formatIssue(filePath: string, issue: ValidationIssue): string {
   const prefix = issue.severity === "error" ? "ERROR" : "WARN";
   const path = issue.path ? ` (${issue.path.join(".")})` : "";
   const suggestion = issue.suggestion ? `\n  → ${issue.suggestion}` : "";

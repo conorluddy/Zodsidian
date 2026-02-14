@@ -2,10 +2,7 @@ import chalk from "chalk";
 import type { ValidationIssue, VaultStats } from "@zodsidian/core";
 
 export function printIssue(filePath: string, issue: ValidationIssue): void {
-  const prefix =
-    issue.severity === "error"
-      ? chalk.red("ERROR")
-      : chalk.yellow("WARN");
+  const prefix = issue.severity === "error" ? chalk.red("ERROR") : chalk.yellow("WARN");
   const path = issue.path ? chalk.dim(` (${issue.path.join(".")})`) : "";
   console.log(`  ${prefix} ${filePath}${path}: ${issue.message}`);
   if (issue.suggestion) {

@@ -11,9 +11,7 @@ const CANONICAL_ORDER = [
   "tags",
 ];
 
-export function sortKeys(
-  data: Record<string, unknown>,
-): Record<string, unknown> {
+export function sortKeys(data: Record<string, unknown>): Record<string, unknown> {
   const sorted: Record<string, unknown> = {};
   for (const key of CANONICAL_ORDER) {
     if (key in data) {
