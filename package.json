@@ -13,6 +13,7 @@
     "*.{ts,js,mjs,json,md,yaml}": "prettier --write",
     "*.ts": "bash -c 'pnpm test && pnpm -r build'"
   },
+  "packageManager": "pnpm@10.29.2",
   "devDependencies": {
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
