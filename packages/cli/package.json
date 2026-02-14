@@ -1,0 +1,20 @@
+{
+  "name": "@zodsidian/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "zodsidian": "bin/zodsidian.js"
+  },
+  "main": "dist/cli.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@zodsidian/core": "workspace:*",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

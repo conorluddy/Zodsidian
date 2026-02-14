@@ -1,0 +1,9 @@
+{
+  "id": "zodsidian",
+  "name": "Zodsidian",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "Zod-based YAML frontmatter schema validation",
+  "author": "Conor",
+  "isDesktopOnly": false
+}
