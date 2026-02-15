@@ -1,6 +1,12 @@
-import { stringify } from "yaml";
 import { parseFrontmatter } from "../parser/index.js";
-import { normalizeTags, sortKeysStrategy, type FixStrategy } from "./strategies.js";
+import { getSchemaEntry } from "../schema/index.js";
+import {
+  normalizeTags,
+  sortKeysStrategy,
+  removeUnknownKeys,
+  type FixStrategy,
+} from "./strategies.js";
+import { stringifyFrontmatter } from "./yaml-util.js";
 
 export interface FixOptions {
   unsafe?: boolean;
@@ -19,17 +25,23 @@ export function applyFixes(fileContent: string, options: FixOptions = {}): FixRe
   }
 
   let data = parsed.data as Record<string, unknown>;
-  const strategies: FixStrategy[] = [
-    normalizeTags,
-    sortKeysStrategy,
-    ...(options.extraStrategies ?? []),
-  ];
+  const strategies: FixStrategy[] = [normalizeTags, sortKeysStrategy];
+
+  if (options.unsafe) {
+    const typeName = typeof data.type === "string" ? data.type : undefined;
+    const entry = typeName ? getSchemaEntry(typeName) : undefined;
+    if (entry) {
+      strategies.push(removeUnknownKeys(new Set(Object.keys(entry.schema.shape))));
+    }
+  }
+
+  strategies.push(...(options.extraStrategies ?? []));
 
   for (const strategy of strategies) {
     data = strategy(data);
   }
 
-  const newYaml = stringify(data, { lineWidth: 0 }).trim();
+  const newYaml = stringifyFrontmatter(data);
   const newContent = `---\n${newYaml}\n---${parsed.body}`;
   const changed = newContent !== fileContent;
 

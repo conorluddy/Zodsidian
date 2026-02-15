@@ -1,19 +1,10 @@
-const CANONICAL_ORDER = [
-  "type",
-  "id",
-  "title",
-  "status",
-  "outcome",
-  "projectId",
-  "decisionDate",
-  "created",
-  "updated",
-  "tags",
-];
-
-export function sortKeys(data: Record<string, unknown>): Record<string, unknown> {
+export function sortKeys(
+  data: Record<string, unknown>,
+  keyOrder?: string[],
+): Record<string, unknown> {
+  const order = keyOrder ?? Object.keys(data).sort();
   const sorted: Record<string, unknown> = {};
-  for (const key of CANONICAL_ORDER) {
+  for (const key of order) {
     if (key in data) {
       sorted[key] = data[key];
     }

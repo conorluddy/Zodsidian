@@ -6,12 +6,29 @@ import type {
 } from "../types/index.js";
 import { parseFrontmatter } from "../parser/index.js";
 import { validateFrontmatter } from "../validator/index.js";
-
-const REFERENCE_FIELDS = ["projectId"];
+import { getSchemaEntry } from "../schema/index.js";
 
 interface FileEntry {
   filePath: string;
   content: string;
+}
+
+function createFileNode(
+  filePath: string,
+  issues: ValidationIssue[],
+  data?: Record<string, unknown>,
+): FileNode {
+  const errors = issues.filter((i) => i.severity === "error").length;
+  const warnings = issues.filter((i) => i.severity === "warning").length;
+  return {
+    filePath,
+    type: data && typeof data.type === "string" ? data.type : null,
+    id: data && typeof data.id === "string" ? data.id : null,
+    title: data && typeof data.title === "string" ? data.title : null,
+    isValid: errors === 0,
+    errorCount: errors,
+    warningCount: warnings,
+  };
 }
 
 export function buildVaultIndex(files: FileEntry[]): VaultIndex {
@@ -31,7 +48,11 @@ export function buildVaultIndex(files: FileEntry[]): VaultIndex {
       const schemaIssues = validateFrontmatter(data);
       allIssues = [...allIssues, ...schemaIssues];
 
-      for (const field of REFERENCE_FIELDS) {
+      const typeName = typeof data.type === "string" ? data.type : null;
+      const entry = typeName ? getSchemaEntry(typeName) : undefined;
+      const refFields = entry?.referenceFields ?? [];
+
+      for (const field of refFields) {
         if (typeof data[field] === "string") {
           edges.push({ sourceFile: filePath, targetId: data[field], field });
         }
@@ -42,37 +63,16 @@ export function buildVaultIndex(files: FileEntry[]): VaultIndex {
         idIndex.set(id, filePath);
       }
 
-      const errors = allIssues.filter((i) => i.severity === "error").length;
-      const warnings = allIssues.filter((i) => i.severity === "warning").length;
-      totalErrors += errors;
-      totalWarnings += warnings;
-      const isValid = errors === 0;
-      if (isValid) validFiles++;
-
-      fileNodes.set(filePath, {
-        filePath,
-        type: typeof data.type === "string" ? data.type : null,
-        id,
-        title: typeof data.title === "string" ? data.title : null,
-        isValid,
-        errorCount: errors,
-        warningCount: warnings,
-      });
+      const node = createFileNode(filePath, allIssues, data);
+      totalErrors += node.errorCount;
+      totalWarnings += node.warningCount;
+      if (node.isValid) validFiles++;
+      fileNodes.set(filePath, node);
     } else {
-      const errors = allIssues.filter((i) => i.severity === "error").length;
-      const warnings = allIssues.filter((i) => i.severity === "warning").length;
-      totalErrors += errors;
-      totalWarnings += warnings;
-
-      fileNodes.set(filePath, {
-        filePath,
-        type: null,
-        id: null,
-        title: null,
-        isValid: false,
-        errorCount: errors,
-        warningCount: warnings,
-      });
+      const node = createFileNode(filePath, allIssues);
+      totalErrors += node.errorCount;
+      totalWarnings += node.warningCount;
+      fileNodes.set(filePath, node);
     }
   }
 

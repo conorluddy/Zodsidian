@@ -5,3 +5,5 @@ export * from "./validator/index.js";
 export * from "./autofix/index.js";
 export * from "./indexer/index.js";
 export * from "./reporter/index.js";
+export * from "./scaffold/index.js";
+export * from "./query/index.js";
