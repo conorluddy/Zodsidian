@@ -1,0 +1,95 @@
+.zodsidian-panel {
+  padding: 12px;
+  background: var(--background-primary);
+}
+
+.zodsidian-file-header {
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  word-break: break-all;
+}
+
+.zodsidian-issue {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.zodsidian-issue:last-child {
+  border-bottom: none;
+}
+
+.zodsidian-error {
+  border-left: 3px solid var(--text-error);
+  padding-left: 8px;
+}
+
+.zodsidian-warning {
+  border-left: 3px solid var(--text-warning, var(--text-accent));
+  padding-left: 8px;
+}
+
+.zodsidian-severity-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+}
+
+.zodsidian-error > .zodsidian-severity-icon {
+  color: var(--text-error);
+}
+
+.zodsidian-warning > .zodsidian-severity-icon {
+  color: var(--text-warning, var(--text-accent));
+}
+
+.zodsidian-issue-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.zodsidian-issue-header {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin-bottom: 2px;
+}
+
+.zodsidian-issue-code {
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.zodsidian-issue-path {
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.zodsidian-issue-message {
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+}
+
+.zodsidian-issue-suggestion {
+  font-style: italic;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.zodsidian-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px 12px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
