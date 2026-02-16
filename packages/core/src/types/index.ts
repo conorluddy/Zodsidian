@@ -1,3 +1,4 @@
+export type { Result } from "./result.types.js";
 export type { SchemaDefinition, SchemaEntry } from "./schema.types.js";
 export type { FrontmatterSpan, FrontmatterResult } from "./frontmatter.types.js";
 export { IssueCode } from "./validation.types.js";

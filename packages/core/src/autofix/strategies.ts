@@ -10,7 +10,7 @@ export const normalizeTags: FixStrategy = (data) => {
   return data;
 };
 
-export const sortKeysStrategy: FixStrategy = (data) => {
+export const sortKeysBySchema: FixStrategy = (data) => {
   const typeName = typeof data.type === "string" ? data.type : undefined;
   const entry = typeName ? getSchemaEntry(typeName) : undefined;
   return sortKeys(data, entry?.keyOrder);

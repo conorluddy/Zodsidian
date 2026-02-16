@@ -1,1 +1,6 @@
-export { scaffold, type ScaffoldOptions, type ScaffoldResult } from "./scaffold.js";
+export {
+  scaffold,
+  type ScaffoldOptions,
+  type ScaffoldResult,
+  type ScaffoldError,
+} from "./scaffold.js";

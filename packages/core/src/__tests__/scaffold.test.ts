@@ -10,29 +10,33 @@ describe("scaffold", () => {
     loadSchemas();
   });
 
-  it("generates valid project frontmatter", () => {
+  it("generates valid project frontmatter with overrides", () => {
     const result = scaffold("project", {
       overrides: { id: "proj-new", title: "New Project" },
     });
-    expect(result.type).toBe("project");
-    expect(result.content).toContain("type: project");
-    expect(result.content).toContain("id: proj-new");
-    expect(result.content).toContain("title: New Project");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.type).toBe("project");
+    expect(result.value.content).toContain("type: project");
+    expect(result.value.content).toContain("id: proj-new");
+    expect(result.value.content).toContain("title: New Project");
   });
 
-  it("round-trips: scaffold -> parse -> validate -> zero issues", () => {
+  it("scaffolded project with overrides validates without errors", () => {
     const result = scaffold("project", {
       overrides: { id: "proj-rt", title: "Round Trip" },
     });
-    const parsed = parseFrontmatter(result.content);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const parsed = parseFrontmatter(result.value.content);
     expect(parsed.isValid).toBe(true);
-    expect(parsed.data).toBeTruthy();
 
     const issues = validateFrontmatter(parsed.data as Record<string, unknown>);
     expect(issues).toHaveLength(0);
   });
 
-  it("round-trips decision with overrides", () => {
+  it("scaffolded decision with overrides validates without errors", () => {
     const result = scaffold("decision", {
       overrides: {
         id: "dec-rt",
@@ -42,33 +46,46 @@ describe("scaffold", () => {
         outcome: "Approved",
       },
     });
-    const parsed = parseFrontmatter(result.content);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const parsed = parseFrontmatter(result.value.content);
     const issues = validateFrontmatter(parsed.data as Record<string, unknown>);
     expect(issues).toHaveLength(0);
   });
 
-  it("round-trips idea with minimal overrides", () => {
+  it("scaffolded idea with minimal overrides validates without errors", () => {
     const result = scaffold("idea", {
       overrides: { id: "idea-rt", title: "Test Idea" },
     });
-    const parsed = parseFrontmatter(result.content);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const parsed = parseFrontmatter(result.value.content);
     const issues = validateFrontmatter(parsed.data as Record<string, unknown>);
     expect(issues).toHaveLength(0);
   });
 
-  it("throws for unknown schema type", () => {
-    expect(() => scaffold("nonexistent")).toThrow('Unknown schema type: "nonexistent"');
+  it("returns error for unknown schema type", () => {
+    const result = scaffold("nonexistent");
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("UNKNOWN_TYPE");
+    expect(result.error.message).toContain("nonexistent");
   });
 
-  it("uses schema key order", () => {
+  it("orders keys according to schema definition", () => {
     const result = scaffold("project", {
       overrides: { id: "proj-ord", title: "Ordered" },
     });
-    const fmMatch = result.content.match(/---\n([\s\S]*?)\n---/);
-    const lines = fmMatch![1].split("\n").map((l) => l.split(":")[0].trim());
-    expect(lines[0]).toBe("type");
-    expect(lines[1]).toBe("id");
-    expect(lines[2]).toBe("title");
-    expect(lines[3]).toBe("status");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const parsed = parseFrontmatter(result.value.content);
+    const keys = Object.keys(parsed.data as Record<string, unknown>);
+    expect(keys[0]).toBe("type");
+    expect(keys[1]).toBe("id");
+    expect(keys[2]).toBe("title");
+    expect(keys[3]).toBe("status");
   });
 });

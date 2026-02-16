@@ -2,7 +2,7 @@ import { parseFrontmatter } from "../parser/index.js";
 import { getSchemaEntry } from "../schema/index.js";
 import {
   normalizeTags,
-  sortKeysStrategy,
+  sortKeysBySchema,
   removeUnknownKeys,
   type FixStrategy,
 } from "./strategies.js";
@@ -25,7 +25,7 @@ export function applyFixes(fileContent: string, options: FixOptions = {}): FixRe
   }
 
   let data = parsed.data as Record<string, unknown>;
-  const strategies: FixStrategy[] = [normalizeTags, sortKeysStrategy];
+  const strategies: FixStrategy[] = [normalizeTags, sortKeysBySchema];
 
   if (options.unsafe) {
     const typeName = typeof data.type === "string" ? data.type : undefined;

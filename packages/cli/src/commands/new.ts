@@ -22,13 +22,17 @@ export async function newCommand(
     }
 
     const result = scaffold(type, { overrides });
+    if (!result.ok) {
+      console.error(result.error.message);
+      process.exit(EXIT_RUNTIME_ERROR);
+    }
 
     if (options.out) {
       const filePath = join(options.out, `${type}-new.md`);
-      await writeFile(filePath, result.content, "utf-8");
+      await writeFile(filePath, result.value.content, "utf-8");
       console.log(chalk.green(`Created: ${filePath}`));
     } else {
-      process.stdout.write(result.content);
+      process.stdout.write(result.value.content);
     }
   } catch (err) {
     console.error(`Scaffold failed: ${err instanceof Error ? err.message : String(err)}`);

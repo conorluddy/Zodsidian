@@ -13,23 +13,9 @@ interface FileEntry {
   content: string;
 }
 
-function createFileNode(
-  filePath: string,
-  issues: ValidationIssue[],
-  data?: Record<string, unknown>,
-): FileNode {
-  const errors = issues.filter((i) => i.severity === "error").length;
-  const warnings = issues.filter((i) => i.severity === "warning").length;
-  return {
-    filePath,
-    type: data && typeof data.type === "string" ? data.type : null,
-    id: data && typeof data.id === "string" ? data.id : null,
-    title: data && typeof data.title === "string" ? data.title : null,
-    isValid: errors === 0,
-    errorCount: errors,
-    warningCount: warnings,
-  };
-}
+// ========================================
+// PUBLIC API
+// ========================================
 
 export function buildVaultIndex(files: FileEntry[]): VaultIndex {
   const fileNodes = new Map<string, FileNode>();
@@ -86,5 +72,27 @@ export function buildVaultIndex(files: FileEntry[]): VaultIndex {
       errorCount: totalErrors,
       warningCount: totalWarnings,
     },
+  };
+}
+
+// ========================================
+// HELPERS
+// ========================================
+
+function createFileNode(
+  filePath: string,
+  issues: ValidationIssue[],
+  data?: Record<string, unknown>,
+): FileNode {
+  const errors = issues.filter((i) => i.severity === "error").length;
+  const warnings = issues.filter((i) => i.severity === "warning").length;
+  return {
+    filePath,
+    type: data && typeof data.type === "string" ? data.type : null,
+    id: data && typeof data.id === "string" ? data.id : null,
+    title: data && typeof data.title === "string" ? data.title : null,
+    isValid: errors === 0,
+    errorCount: errors,
+    warningCount: warnings,
   };
 }

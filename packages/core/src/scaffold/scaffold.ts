@@ -1,6 +1,6 @@
 import { getSchemaEntry } from "../schema/index.js";
 import { stringifyFrontmatter } from "../autofix/yaml-util.js";
-import type { SchemaEntry } from "../types/index.js";
+import type { Result, SchemaEntry } from "../types/index.js";
 
 export interface ScaffoldOptions {
   overrides?: Record<string, unknown>;
@@ -11,17 +11,64 @@ export interface ScaffoldResult {
   type: string;
 }
 
-function unwrapField(fieldDef: unknown): { _def: Record<string, unknown> } {
-  const def = (fieldDef as { _def: Record<string, unknown> })._def;
-  const typeName = def.typeName as string;
+export type ScaffoldError = {
+  code: "UNKNOWN_TYPE";
+  message: string;
+};
 
-  if (typeName === "ZodDefault" || typeName === "ZodOptional") {
-    return unwrapField(def.innerType);
+// ========================================
+// PUBLIC API
+// ========================================
+
+export function scaffold(
+  typeName: string,
+  options: ScaffoldOptions = {},
+): Result<ScaffoldResult, ScaffoldError> {
+  const entry = getSchemaEntry(typeName);
+  if (!entry) {
+    return {
+      ok: false,
+      error: {
+        code: "UNKNOWN_TYPE",
+        message: `Unknown schema type: "${typeName}". Register it via loadSchemas() or registerSchema().`,
+      },
+    };
   }
-  return fieldDef as { _def: Record<string, unknown> };
+
+  const defaults = extractSchemaDefaults(entry);
+  const data = { ...defaults, ...options.overrides };
+
+  const ordered: Record<string, unknown> = {};
+  const keyOrder = entry.keyOrder ?? Object.keys(data);
+  for (const key of keyOrder) {
+    if (key in data) {
+      ordered[key] = data[key];
+    }
+  }
+  for (const key of Object.keys(data)) {
+    if (!(key in ordered)) {
+      ordered[key] = data[key];
+    }
+  }
+
+  const yaml = stringifyFrontmatter(ordered);
+  const content = `---\n${yaml}\n---\n`;
+
+  return { ok: true, value: { content, type: typeName } };
 }
 
-function extractDefaultsDeep(entry: SchemaEntry): Record<string, unknown> {
+// ========================================
+// HELPERS
+// ========================================
+
+/**
+ * Walk a Zod schema's shape and extract sensible defaults for each field.
+ *
+ * Accesses Zod's internal `_def` structure because there is no public API
+ * for introspecting field types and defaults. If Zod's internals change,
+ * this function is the single place that needs updating.
+ */
+function extractSchemaDefaults(entry: SchemaEntry): Record<string, unknown> {
   const defaults: Record<string, unknown> = {};
   const shape = entry.schema.shape;
 
@@ -29,10 +76,9 @@ function extractDefaultsDeep(entry: SchemaEntry): Record<string, unknown> {
     const outerDef = (fieldDef as { _def: Record<string, unknown> })._def;
     const outerType = outerDef.typeName as string;
 
-    // Skip optional fields (user fills them in)
     if (outerType === "ZodOptional") continue;
 
-    const inner = unwrapField(fieldDef);
+    const inner = resolveInnerType(fieldDef);
     const innerDef = inner._def;
     const innerType = innerDef.typeName as string;
 
@@ -52,34 +98,13 @@ function extractDefaultsDeep(entry: SchemaEntry): Record<string, unknown> {
   return defaults;
 }
 
-export function scaffold(
-  typeName: string,
-  options: ScaffoldOptions = {},
-): ScaffoldResult {
-  const entry = getSchemaEntry(typeName);
-  if (!entry) {
-    throw new Error(`Unknown schema type: "${typeName}"`);
+/** Unwrap ZodDefault/ZodOptional wrappers to find the leaf Zod type. */
+function resolveInnerType(fieldDef: unknown): { _def: Record<string, unknown> } {
+  const def = (fieldDef as { _def: Record<string, unknown> })._def;
+  const typeName = def.typeName as string;
+
+  if (typeName === "ZodDefault" || typeName === "ZodOptional") {
+    return resolveInnerType(def.innerType);
   }
-
-  const defaults = extractDefaultsDeep(entry);
-  const data = { ...defaults, ...options.overrides };
-
-  // Order keys according to schema key order
-  const ordered: Record<string, unknown> = {};
-  const keyOrder = entry.keyOrder ?? Object.keys(data);
-  for (const key of keyOrder) {
-    if (key in data) {
-      ordered[key] = data[key];
-    }
-  }
-  for (const key of Object.keys(data)) {
-    if (!(key in ordered)) {
-      ordered[key] = data[key];
-    }
-  }
-
-  const yaml = stringifyFrontmatter(ordered);
-  const content = `---\n${yaml}\n---\n`;
-
-  return { content, type: typeName };
+  return fieldDef as { _def: Record<string, unknown> };
 }
