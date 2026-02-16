@@ -45,6 +45,37 @@ describe("validateFrontmatter", () => {
     expect(issues.length).toBeGreaterThan(0);
   });
 
+  it("validates a correct idea", () => {
+    const issues = validateFrontmatter({
+      type: "idea",
+      id: "idea-1",
+      title: "Dark mode",
+      status: "draft",
+    });
+    expect(issues).toHaveLength(0);
+  });
+
+  it("validates idea with optional projectId", () => {
+    const issues = validateFrontmatter({
+      type: "idea",
+      id: "idea-2",
+      title: "Linked idea",
+      status: "proposed",
+      projectId: "proj-1",
+    });
+    expect(issues).toHaveLength(0);
+  });
+
+  it("rejects idea with invalid status", () => {
+    const issues = validateFrontmatter({
+      type: "idea",
+      id: "idea-3",
+      title: "Bad status",
+      status: "invalid-status",
+    });
+    expect(issues.some((i) => i.code === IssueCode.FM_SCHEMA_INVALID)).toBe(true);
+  });
+
   it("validates a correct decision", () => {
     const issues = validateFrontmatter({
       type: "decision",

@@ -1,4 +1,5 @@
 import { sortKeys } from "./key-order.js";
+import { getSchemaEntry } from "../schema/index.js";
 
 export type FixStrategy = (data: Record<string, unknown>) => Record<string, unknown>;
 
@@ -9,8 +10,10 @@ export const normalizeTags: FixStrategy = (data) => {
   return data;
 };
 
-export const sortKeysStrategy: FixStrategy = (data) => {
-  return sortKeys(data);
+export const sortKeysBySchema: FixStrategy = (data) => {
+  const typeName = typeof data.type === "string" ? data.type : undefined;
+  const entry = typeName ? getSchemaEntry(typeName) : undefined;
+  return sortKeys(data, entry?.keyOrder);
 };
 
 export const removeUnknownKeys = (allowedKeys: Set<string>): FixStrategy => {

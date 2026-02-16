@@ -3,6 +3,8 @@ import { validateCommand } from "./commands/validate.js";
 import { fixCommand } from "./commands/fix.js";
 import { indexCommand } from "./commands/index-cmd.js";
 import { reportCommand } from "./commands/report.js";
+import { newCommand } from "./commands/new.js";
+import { queryCommand } from "./commands/query.js";
 
 const program = new Command();
 
@@ -34,5 +36,20 @@ program
   .command("report <dir>")
   .description("Print a summary report of vault health")
   .action(reportCommand);
+
+program
+  .command("new <type>")
+  .description("Scaffold a new document from its schema")
+  .option("--project <id>", "Set projectId on the scaffolded document")
+  .option("--out <dir>", "Write to directory instead of stdout")
+  .action(newCommand);
+
+program
+  .command("query <dir>")
+  .description("Query the vault as a typed graph")
+  .option("--type <type>", "Filter nodes by schema type")
+  .option("--id <id>", "Look up a single node by id")
+  .option("--refs", "Include incoming and outgoing references (requires --id)")
+  .action(queryCommand);
 
 program.parse();

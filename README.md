@@ -26,9 +26,9 @@ Validate and fix frontmatter against Zod schemas. Schemas are the single source 
 Generate valid documents directly from schemas. No separate templates to maintain — if the schema knows the fields, defaults, and types, Zodsidian can stub out a conformant file.
 
 ```bash
-# Planned — not yet implemented
 zodsidian new project                    # stubs a project with valid frontmatter
 zodsidian new decision --project proj-1  # decision linked to a project
+zodsidian new idea --project proj-1      # idea linked to a project
 ```
 
 The CLI derives fields, defaults, and references directly from the Zod definition. There are no template files — the schema **is** the template.
@@ -142,23 +142,31 @@ zodsidian fix ./vault --dry-run        # preview without writing
 
 ## CLI usage
 
-### Validation & maintenance
-
 ```bash
-zodsidian validate <dir>                  # validate all markdown files
-zodsidian fix <dir> [--write] [--unsafe]  # auto-fix frontmatter issues
-zodsidian fix <dir> --dry-run             # preview fixes without writing
-zodsidian index <dir> [--out <file>]      # build vault index (JSON)
-zodsidian report <dir>                    # print vault health summary
+zodsidian validate <dir>                         # validate all markdown files
+zodsidian fix <dir> [--write] [--unsafe]         # auto-fix frontmatter issues
+zodsidian fix <dir> --dry-run                    # preview fixes without writing
+zodsidian index <dir> [--out <file>]             # build vault index (JSON)
+zodsidian report <dir>                           # print vault health summary
+zodsidian new <type> [--project <id>] [--out <dir>]  # scaffold a new document
+zodsidian query <dir> [--type <type>] [--id <id>] [--refs]  # query vault graph
 ```
 
-### Scaffolding (planned)
+### Scaffolding
 
 ```bash
-zodsidian new <type> [--project <id>]     # stub a new note from its schema
+zodsidian new <type> [--project <id>] [--out <dir>]  # stub a new note from its schema
 ```
 
 Schema-driven: reads the Zod definition to populate fields and defaults. No template files to maintain.
+
+### Query
+
+```bash
+zodsidian query <dir> --type <type>       # list all nodes of a type (JSON)
+zodsidian query <dir> --id <id>           # look up a single node
+zodsidian query <dir> --id <id> --refs    # node with incoming/outgoing refs
+```
 
 ## Design principles
 
@@ -168,7 +176,9 @@ Schema-driven: reads the Zod definition to populate fields and defaults. No temp
 
 **Progressive disclosure.** Minimize tokens and cognitive load. Summaries before details, indexes before full documents, schema types before field definitions. The vault structure is designed so both humans and AI can navigate from high-level to deep context with minimal waste.
 
-**AI-native.** Designed for a world where AI agents are first-class vault participants. They read project context, write tech debt notes, query the backlog, and validate their own output — all against the same schemas humans use.
+**AI-native.** Designed for a world where AI agents are first-class vault participants. They read project context, write tech debt notes, query the backlog, and validate their own output — all against the same schemas humans use. The CLI is the API surface for AI — every command is fully parameterizable via flags/args with no interactive prompts.
+
+**Zod with `.describe()`.** Every schema and every field uses Zod's `.describe()` decorator. Descriptions serve as documentation for humans, help text for CLI, and introspection for AI. The schema is the single source of truth for what a field means, not just what shape it has.
 
 ## Architecture
 
@@ -191,12 +201,12 @@ packages/obsidian-plugin → @zodsidian/obsidian-plugin
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| `@zodsidian/schemas` | Zod schema definitions (single source of truth) |
-| `@zodsidian/core` | Parsing, validation, autofix, indexing, reporting |
-| `@zodsidian/cli` | CLI: `validate`, `fix`, `index`, `report` |
-| `@zodsidian/obsidian-plugin` | Obsidian plugin with live validation and autofix |
+| Package                      | Description                                               |
+| ---------------------------- | --------------------------------------------------------- |
+| `@zodsidian/schemas`         | Zod schema definitions (single source of truth)           |
+| `@zodsidian/core`            | Parsing, validation, autofix, indexing, reporting         |
+| `@zodsidian/cli`             | CLI: `validate`, `fix`, `index`, `report`, `new`, `query` |
+| `@zodsidian/obsidian-plugin` | Obsidian plugin with live validation and autofix          |
 
 ## Development
 
@@ -211,15 +221,18 @@ pnpm format
 ## Roadmap
 
 **Built:**
-- Zod schema definitions with `.strict()` enforcement (project, decision)
+
+- Zod schema definitions with `.strict()` enforcement and `.describe()` on every field (project, decision, idea)
 - Full validation pipeline — file-level and vault-level (duplicate IDs, broken references)
-- Autofix engine — key sorting, tag normalization, unknown key removal
-- CLI commands — `validate`, `fix`, `index`, `report`
+- Autofix engine — key sorting (schema-driven), tag normalization, unknown key removal (`--unsafe`)
+- Schema-driven scaffolding (`zodsidian new <type>`)
+- In-memory typed graph with query API (`zodsidian query`)
+- Schema metadata registry — reference fields and key order derived from schema definitions
+- CLI commands — `validate`, `fix`, `index`, `report`, `new`, `query`
 - Obsidian plugin skeleton with live validation and settings UI
 - Reporter with formatted output and vault health summaries
 
 **Next:**
-- Schema-driven scaffolding (`zodsidian new <type>`)
-- Additional schema types (idea, techdebt, issue)
-- Query layer — in-memory typed graph, JSON export
-- Obsidian plugin polish — status bar, validation view
+
+- Additional schema types (techdebt, issue)
+- Obsidian plugin polish — status bar, validation view, scaffold/query integration

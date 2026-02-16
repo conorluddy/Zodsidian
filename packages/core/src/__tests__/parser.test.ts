@@ -40,6 +40,17 @@ Some markdown body`;
     expect(result.isValid).toBe(false);
   });
 
+  it("handles empty frontmatter", () => {
+    const content = `---
+---
+
+Body after empty frontmatter`;
+    const result = parseFrontmatter(content);
+    expect(result.isValid).toBe(true);
+    expect(result.data).toEqual({});
+    expect(result.body).toContain("Body after empty frontmatter");
+  });
+
   it("preserves body content exactly", () => {
     const body = "\n# Heading\n\nParagraph with **bold**.\n";
     const content = `---\ntitle: Test\n---${body}`;

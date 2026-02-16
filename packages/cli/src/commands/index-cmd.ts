@@ -2,6 +2,7 @@ import { writeFile } from "node:fs/promises";
 import { loadSchemas, buildVaultIndex } from "@zodsidian/core";
 import { walkMarkdownFiles } from "../utils/walk.js";
 import { printJson } from "../output/console-formatter.js";
+import { EXIT_RUNTIME_ERROR } from "../utils/exit-codes.js";
 
 interface IndexCommandOptions {
   out?: string;
@@ -20,15 +21,20 @@ export async function indexCommand(
   dir: string,
   options: IndexCommandOptions,
 ): Promise<void> {
-  loadSchemas();
-  const files = await walkMarkdownFiles(dir);
-  const index = buildVaultIndex(files);
-  const serialized = serializeIndex(index);
+  try {
+    loadSchemas();
+    const files = await walkMarkdownFiles(dir);
+    const index = buildVaultIndex(files);
+    const serialized = serializeIndex(index);
 
-  if (options.out) {
-    await writeFile(options.out, JSON.stringify(serialized, null, 2), "utf-8");
-    console.log(`Index written to ${options.out}`);
-  } else {
-    printJson(serialized);
+    if (options.out) {
+      await writeFile(options.out, JSON.stringify(serialized, null, 2), "utf-8");
+      console.log(`Index written to ${options.out}`);
+    } else {
+      printJson(serialized);
+    }
+  } catch (err) {
+    console.error(`Index failed: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(EXIT_RUNTIME_ERROR);
   }
 }
