@@ -4,5 +4,6 @@ export {
   normalizeTags,
   sortKeysBySchema,
   removeUnknownKeys,
+  populateMissingFields,
   type FixStrategy,
 } from "./strategies.js";

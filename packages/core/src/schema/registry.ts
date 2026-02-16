@@ -5,11 +5,12 @@ const registry = new Map<string, SchemaEntry>();
 export function registerSchema(
   type: string,
   schema: SchemaDefinition,
-  options?: { referenceFields?: string[]; keyOrder?: string[] },
+  options?: { idField?: string; referenceFields?: string[]; keyOrder?: string[] },
 ): void {
   registry.set(type, {
     type,
     schema,
+    idField: options?.idField,
     referenceFields: options?.referenceFields,
     keyOrder: options?.keyOrder ?? Object.keys(schema.shape),
   });

@@ -28,9 +28,10 @@ status: active
 type: decision
 id: dec-1
 title: Use Zod
-projectId: proj-alpha
 decisionDate: "2026-01-15"
 outcome: Approved
+projects:
+  - proj-alpha
 ---`,
       },
     ];
@@ -42,7 +43,7 @@ outcome: Approved
     expect(index.edges[0]).toEqual({
       sourceFile: "decisions/use-zod.md",
       targetId: "proj-alpha",
-      field: "projectId",
+      field: "projects",
     });
     expect(index.stats.validFiles).toBe(2);
   });
@@ -65,7 +66,8 @@ type: idea
 id: idea-1
 title: Dark mode
 status: draft
-projectId: proj-alpha
+projects:
+  - proj-alpha
 ---`,
       },
     ];
@@ -75,7 +77,7 @@ projectId: proj-alpha
     expect(index.edges[0]).toEqual({
       sourceFile: "ideas/dark-mode.md",
       targetId: "proj-alpha",
-      field: "projectId",
+      field: "projects",
     });
   });
 
@@ -113,6 +115,77 @@ assigneeId: user-42
       field: "assigneeId",
     });
   });
+
+  it("uses custom idField from schema metadata", () => {
+    const personSchema = z
+      .object({
+        type: z.literal("person"),
+        slug: z.string().min(1),
+        name: z.string().min(1),
+      })
+      .strict();
+
+    registerSchema("person", personSchema, {
+      idField: "slug",
+    });
+
+    const files = [
+      {
+        filePath: "people/jane.md",
+        content: `---
+type: person
+slug: jane-doe
+name: Jane Doe
+---`,
+      },
+    ];
+
+    const index = buildVaultIndex(files);
+    expect(index.idIndex.get("jane-doe")).toBe("people/jane.md");
+    expect(index.files.get("people/jane.md")?.id).toBe("jane-doe");
+  });
+
+  it("creates multiple edges from array reference field", () => {
+    const files = [
+      {
+        filePath: "projects/alpha.md",
+        content: `---
+type: project
+id: proj-alpha
+title: Alpha
+status: active
+---`,
+      },
+      {
+        filePath: "projects/beta.md",
+        content: `---
+type: project
+id: proj-beta
+title: Beta
+status: active
+---`,
+      },
+      {
+        filePath: "ideas/cross-project.md",
+        content: `---
+type: idea
+id: idea-cross
+title: Cross-project idea
+status: draft
+projects:
+  - proj-alpha
+  - proj-beta
+---`,
+      },
+    ];
+
+    const index = buildVaultIndex(files);
+    const ideaEdges = index.edges.filter(
+      (e) => e.sourceFile === "ideas/cross-project.md",
+    );
+    expect(ideaEdges).toHaveLength(2);
+    expect(ideaEdges.map((e) => e.targetId).sort()).toEqual(["proj-alpha", "proj-beta"]);
+  });
 });
 
 describe("validateVault", () => {
@@ -147,9 +220,10 @@ describe("validateVault", () => {
 type: decision
 id: dec-1
 title: Orphan Decision
-projectId: nonexistent
 decisionDate: "2026-01-01"
 outcome: Rejected
+projects:
+  - nonexistent
 ---`,
       },
     ];

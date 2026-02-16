@@ -5,7 +5,7 @@ import {
   buildVaultIndex,
   validateVault,
 } from "@zodsidian/core";
-import { walkMarkdownFiles } from "../utils/walk.js";
+import { walkMarkdownFiles, filterByType } from "../utils/walk.js";
 import { printIssue, printSummary } from "../output/console-formatter.js";
 import {
   EXIT_SUCCESS,
@@ -13,10 +13,20 @@ import {
   EXIT_RUNTIME_ERROR,
 } from "../utils/exit-codes.js";
 
-export async function validateCommand(dir: string): Promise<void> {
+interface ValidateCommandOptions {
+  type?: string;
+}
+
+export async function validateCommand(
+  dir: string,
+  options: ValidateCommandOptions,
+): Promise<void> {
   try {
     loadSchemas();
-    const files = await walkMarkdownFiles(dir);
+    let files = await walkMarkdownFiles(dir);
+    if (options.type) {
+      files = filterByType(files, options.type);
+    }
     const contentByPath = new Map(files.map((f) => [f.filePath, f.content]));
     const index = buildVaultIndex(files);
     const vaultResult = validateVault(index);

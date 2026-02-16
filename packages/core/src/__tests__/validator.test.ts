@@ -55,13 +55,13 @@ describe("validateFrontmatter", () => {
     expect(issues).toHaveLength(0);
   });
 
-  it("validates idea with optional projectId", () => {
+  it("validates idea with projects array", () => {
     const issues = validateFrontmatter({
       type: "idea",
       id: "idea-2",
       title: "Linked idea",
       status: "proposed",
-      projectId: "proj-1",
+      projects: ["proj-1"],
     });
     expect(issues).toHaveLength(0);
   });
@@ -81,9 +81,9 @@ describe("validateFrontmatter", () => {
       type: "decision",
       id: "dec-1",
       title: "Use Zod",
-      projectId: "proj-1",
       decisionDate: "2026-01-15",
       outcome: "Approved",
+      projects: ["proj-1"],
     });
     expect(issues).toHaveLength(0);
   });

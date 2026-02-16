@@ -3,47 +3,68 @@ import {
   loadSchemas,
   parseFrontmatter,
   validateFrontmatter,
+  getRegisteredTypes,
   type ValidationIssue,
 } from "@zodsidian/core";
 import { VaultAdapter } from "./vault-adapter.js";
 
+export interface ValidationResult {
+  issues: ValidationIssue[];
+  isTyped: boolean;
+}
+
 export class ValidationService {
-  private cache = new Map<string, ValidationIssue[]>();
+  private cache = new Map<string, ValidationResult>();
   private debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   constructor(private vault: VaultAdapter) {
     loadSchemas();
   }
 
-  async validateFile(file: TFile): Promise<ValidationIssue[]> {
+  async validateFile(file: TFile): Promise<ValidationResult> {
     const content = await this.vault.readFile(file);
     const parsed = parseFrontmatter(content);
     if (!parsed.data || typeof parsed.data !== "object") {
-      this.cache.set(file.path, parsed.issues);
-      return parsed.issues;
+      const result: ValidationResult = { issues: parsed.issues, isTyped: false };
+      this.cache.set(file.path, result);
+      return result;
     }
 
-    const schemaIssues = validateFrontmatter(parsed.data as Record<string, unknown>);
+    const data = parsed.data as Record<string, unknown>;
+    const typeName = typeof data.type === "string" ? data.type : null;
+    const isTyped = typeName !== null && getRegisteredTypes().includes(typeName);
+
+    const schemaIssues = validateFrontmatter(data);
     const allIssues = [...parsed.issues, ...schemaIssues];
-    this.cache.set(file.path, allIssues);
-    return allIssues;
+    const result: ValidationResult = { issues: allIssues, isTyped };
+    this.cache.set(file.path, result);
+    return result;
   }
 
-  validateFileDebounced(file: TFile, delayMs = 500): void {
+  validateFileDebounced(
+    file: TFile,
+    delayMs = 500,
+    onComplete?: (result: ValidationResult) => void,
+  ): void {
     const existing = this.debounceTimers.get(file.path);
     if (existing) clearTimeout(existing);
 
     this.debounceTimers.set(
       file.path,
-      setTimeout(() => {
-        this.validateFile(file);
+      setTimeout(async () => {
+        const result = await this.validateFile(file);
         this.debounceTimers.delete(file.path);
+        onComplete?.(result);
       }, delayMs),
     );
   }
 
+  getCachedResult(filePath: string): ValidationResult | undefined {
+    return this.cache.get(filePath);
+  }
+
   getCachedIssues(filePath: string): ValidationIssue[] {
-    return this.cache.get(filePath) ?? [];
+    return this.cache.get(filePath)?.issues ?? [];
   }
 
   clearCache(): void {

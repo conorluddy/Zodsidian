@@ -29,9 +29,10 @@ status: paused
 type: decision
 id: dec-1
 title: Use Zod
-projectId: proj-alpha
 decisionDate: "2026-01-15"
 outcome: Approved
+projects:
+  - proj-alpha
 ---`,
     },
     {
@@ -41,7 +42,8 @@ type: idea
 id: idea-1
 title: Dark mode
 status: draft
-projectId: proj-alpha
+projects:
+  - proj-alpha
 ---`,
     },
   ];

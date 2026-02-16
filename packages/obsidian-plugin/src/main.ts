@@ -26,17 +26,45 @@ export default class ZodsidianPlugin extends Plugin {
     registerCommands(this);
 
     this.registerEvent(
+      this.app.workspace.on("file-open", (file) => {
+        if (!this.settings.enabled || !file || !file.path.endsWith(".md")) {
+          this.statusBar.clear();
+          return;
+        }
+        this.validationService.validateFile(file).then((result) => {
+          if (!result.isTyped) {
+            this.statusBar.clear();
+          } else {
+            const errors = result.issues.filter((i) => i.severity === "error").length;
+            const warnings = result.issues.filter((i) => i.severity === "warning").length;
+            this.statusBar.update(errors, warnings);
+          }
+        });
+      }),
+    );
+
+    this.registerEvent(
       this.app.vault.on("modify", (file) => {
         if (
-          this.settings.enabled &&
-          this.settings.validateOnSave &&
-          file.path.endsWith(".md")
+          !this.settings.enabled ||
+          !this.settings.validateOnSave ||
+          !file.path.endsWith(".md")
         ) {
-          const tFile = this.app.vault.getFileByPath(file.path);
-          if (tFile) {
-            this.validationService.validateFileDebounced(tFile);
-          }
+          return;
         }
+        const tFile = this.app.vault.getFileByPath(file.path);
+        if (!tFile) return;
+        this.validationService.validateFileDebounced(tFile, 500, (result) => {
+          const activeFile = this.app.workspace.getActiveFile();
+          if (activeFile?.path !== file.path) return;
+          if (!result.isTyped) {
+            this.statusBar.clear();
+          } else {
+            const errors = result.issues.filter((i) => i.severity === "error").length;
+            const warnings = result.issues.filter((i) => i.severity === "warning").length;
+            this.statusBar.update(errors, warnings);
+          }
+        });
       }),
     );
   }

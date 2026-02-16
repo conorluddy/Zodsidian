@@ -1,6 +1,6 @@
 import { Notice } from "obsidian";
 import type ZodsidianPlugin from "../main.js";
-import { applyFixes } from "@zodsidian/core";
+import { applyFixes, type ValidationIssue } from "@zodsidian/core";
 import { VALIDATION_VIEW_TYPE } from "../ui/validation-view.js";
 
 export function registerCommands(plugin: ZodsidianPlugin): void {
@@ -9,11 +9,11 @@ export function registerCommands(plugin: ZodsidianPlugin): void {
     name: "Validate current file",
     editorCallback: async (_editor, ctx) => {
       if (!ctx.file) return;
-      const issues = await plugin.validationService.validateFile(ctx.file);
-      if (issues.length === 0) {
+      const result = await plugin.validationService.validateFile(ctx.file);
+      if (result.issues.length === 0) {
         new Notice("Zodsidian: No issues found.");
       } else {
-        new Notice(`Zodsidian: ${issues.length} issue(s) found.`);
+        new Notice(`Zodsidian: ${result.issues.length} issue(s) found.`);
       }
     },
   });
@@ -24,13 +24,13 @@ export function registerCommands(plugin: ZodsidianPlugin): void {
     callback: async () => {
       const files = plugin.vaultAdapter.getMarkdownFiles();
       let totalIssues = 0;
-      const allResults: { filePath: string; issues: typeof issues }[] = [];
+      const allResults: { filePath: string; issues: ValidationIssue[] }[] = [];
 
       for (const file of files) {
-        const issues = await plugin.validationService.validateFile(file);
-        if (issues.length > 0) {
-          totalIssues += issues.length;
-          allResults.push({ filePath: file.path, issues });
+        const result = await plugin.validationService.validateFile(file);
+        if (result.issues.length > 0) {
+          totalIssues += result.issues.length;
+          allResults.push({ filePath: file.path, issues: result.issues });
         }
       }
 

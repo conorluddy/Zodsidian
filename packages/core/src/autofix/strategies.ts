@@ -1,5 +1,6 @@
 import { sortKeys } from "./key-order.js";
 import { getSchemaEntry } from "../schema/index.js";
+import { extractSchemaDefaults } from "../scaffold/index.js";
 
 export type FixStrategy = (data: Record<string, unknown>) => Record<string, unknown>;
 
@@ -26,4 +27,13 @@ export const removeUnknownKeys = (allowedKeys: Set<string>): FixStrategy => {
     }
     return cleaned;
   };
+};
+
+export const populateMissingFields: FixStrategy = (data) => {
+  const typeName = typeof data.type === "string" ? data.type : undefined;
+  const entry = typeName ? getSchemaEntry(typeName) : undefined;
+  if (!entry) return data;
+
+  const defaults = extractSchemaDefaults(entry);
+  return { ...defaults, ...data };
 };
