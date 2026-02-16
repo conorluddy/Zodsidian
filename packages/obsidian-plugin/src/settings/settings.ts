@@ -4,6 +4,7 @@ export interface ZodsidianSettings {
   validateOnSave: boolean;
   typeMappings: Record<string, string>;
   warnOnMappedTypes: boolean;
+  hasSeenUnknownTypesNotice: boolean;
 }
 
 export const DEFAULT_SETTINGS: ZodsidianSettings = {
@@ -12,4 +13,5 @@ export const DEFAULT_SETTINGS: ZodsidianSettings = {
   validateOnSave: true,
   typeMappings: {},
   warnOnMappedTypes: false,
+  hasSeenUnknownTypesNotice: false,
 };

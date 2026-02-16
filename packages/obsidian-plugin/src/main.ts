@@ -1,20 +1,29 @@
-import { Plugin } from "obsidian";
+import { Plugin, Notice } from "obsidian";
 import type { ValidationIssue } from "@zodsidian/core";
 import { DEFAULT_SETTINGS, type ZodsidianSettings } from "./settings/settings.js";
 import { ZodsidianSettingTab } from "./settings/settings-tab.js";
 import { VaultAdapter } from "./services/vault-adapter.js";
 import { ConfigService } from "./services/config-service.js";
 import { ValidationService } from "./services/validation-service.js";
+import { ReportService } from "./services/report-service.js";
 import { StatusBarManager } from "./ui/status-bar.js";
 import { VALIDATION_VIEW_TYPE, ValidationView } from "./ui/validation-view.js";
-import { registerCommands, revealValidationPanel } from "./commands/plugin-commands.js";
+import { REPORT_VIEW_TYPE, ReportView } from "./ui/report-view.js";
+import {
+  registerCommands,
+  revealValidationPanel,
+  revealReportView,
+} from "./commands/plugin-commands.js";
 
 export default class ZodsidianPlugin extends Plugin {
   settings!: ZodsidianSettings;
   vaultAdapter!: VaultAdapter;
   configService!: ConfigService;
   validationService!: ValidationService;
+  reportService!: ReportService;
   private statusBar!: StatusBarManager;
+  private reportRibbonEl?: HTMLElement;
+  private unknownTypeCount = 0;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -24,9 +33,16 @@ export default class ZodsidianPlugin extends Plugin {
     await this.configService.loadConfig(this.settings);
     this.configService.startWatching(this.settings);
     this.validationService = new ValidationService(this.vaultAdapter, this.configService);
+    this.reportService = new ReportService(this.vaultAdapter, this.configService);
     this.statusBar = new StatusBarManager(this);
 
     this.registerView(VALIDATION_VIEW_TYPE, (leaf) => new ValidationView(leaf));
+    this.registerView(REPORT_VIEW_TYPE, (leaf) => {
+      return new ReportView(leaf, (unknownType) => {
+        // TODO: Phase 5 - Open type mapping modal
+        new Notice(`Type mapping UI coming in Phase 5. Type: ${unknownType}`);
+      });
+    });
 
     this.addSettingTab(new ZodsidianSettingTab(this.app, this));
     registerCommands(this);
@@ -34,6 +50,14 @@ export default class ZodsidianPlugin extends Plugin {
     this.addRibbonIcon("shield-check", "Open Zodsidian validation panel", () => {
       revealValidationPanel(this);
     });
+
+    this.reportRibbonEl = this.addRibbonIcon(
+      "bar-chart",
+      "Open Zodsidian vault report",
+      () => {
+        revealReportView(this);
+      },
+    );
 
     this.registerEvent(
       this.app.workspace.on("file-open", (file) => {
@@ -89,6 +113,9 @@ export default class ZodsidianPlugin extends Plugin {
           this.updateView(activeFile.path, result.issues, result.isTyped);
         });
       }
+
+      // Background scan for unknown types
+      this.performBackgroundScan();
     });
   }
 
@@ -124,6 +151,45 @@ export default class ZodsidianPlugin extends Plugin {
       view.clearFile();
     } else {
       view.setFileResult(filePath, issues ?? [], isTyped ?? false);
+    }
+  }
+
+  private async performBackgroundScan(): Promise<void> {
+    try {
+      const report = await this.reportService.buildReport();
+      this.unknownTypeCount = report.unknownTypes.length;
+      this.updateRibbonBadge();
+
+      // Show first-run notice if unknown types detected
+      if (this.unknownTypeCount > 0 && !this.settings.hasSeenUnknownTypesNotice) {
+        new Notice(
+          `Zodsidian found ${this.unknownTypeCount} unknown type(s). Click the report icon to configure mappings.`,
+          10000,
+        );
+        this.settings.hasSeenUnknownTypesNotice = true;
+        await this.saveSettings();
+      }
+    } catch (err) {
+      console.error("Zodsidian background scan failed:", err);
+    }
+  }
+
+  private updateRibbonBadge(): void {
+    if (!this.reportRibbonEl) return;
+
+    // Remove existing badge
+    const existing = this.reportRibbonEl.querySelector(".zodsidian-badge");
+    if (existing) {
+      existing.remove();
+    }
+
+    // Add badge if unknown types exist
+    if (this.unknownTypeCount > 0) {
+      const badge = this.reportRibbonEl.createSpan({
+        cls: "zodsidian-badge",
+        text: String(this.unknownTypeCount),
+      });
+      this.reportRibbonEl.appendChild(badge);
     }
   }
 }
