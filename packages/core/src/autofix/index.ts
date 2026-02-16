@@ -7,3 +7,4 @@ export {
   populateMissingFields,
   type FixStrategy,
 } from "./strategies.js";
+export { stringifyFrontmatter } from "./yaml-util.js";

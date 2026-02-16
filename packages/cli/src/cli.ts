@@ -5,6 +5,8 @@ import { indexCommand } from "./commands/index-cmd.js";
 import { reportCommand } from "./commands/report.js";
 import { newCommand } from "./commands/new.js";
 import { queryCommand } from "./commands/query.js";
+import { detectCommand } from "./commands/detect.js";
+import { migrateCommand } from "./commands/migrate.js";
 
 const program = new Command();
 
@@ -17,6 +19,7 @@ program
   .command("validate <dir>")
   .description("Validate frontmatter in all markdown files")
   .option("--type <type>", "Filter to a specific document type")
+  .option("--config <path>", "Path to .zodsidian.json config file")
   .action(validateCommand);
 
 program
@@ -27,6 +30,7 @@ program
   .option("--unsafe", "Apply unsafe fixes (e.g. remove unknown keys)")
   .option("--dry-run", "Show what would be fixed without changing files")
   .option("--populate", "Fill missing required fields with schema defaults")
+  .option("--config <path>", "Path to .zodsidian.json config file")
   .action(fixCommand);
 
 program
@@ -34,13 +38,30 @@ program
   .description("Build vault index from markdown files")
   .option("--type <type>", "Filter to a specific document type")
   .option("--out <file>", "Write index to file instead of stdout")
+  .option("--config <path>", "Path to .zodsidian.json config file")
   .action(indexCommand);
 
 program
   .command("report <dir>")
   .description("Print a summary report of vault health")
   .option("--type <type>", "Filter to a specific document type")
+  .option("--config <path>", "Path to .zodsidian.json config file")
   .action(reportCommand);
+
+program
+  .command("detect <dir>")
+  .description("List unknown frontmatter types with file counts")
+  .option("--config <path>", "Path to .zodsidian.json config file")
+  .option("--json", "Output as JSON")
+  .action(detectCommand);
+
+program
+  .command("migrate <dir>")
+  .description("Bulk rename a frontmatter type across all files")
+  .requiredOption("--from <type>", "Source type to rename")
+  .requiredOption("--to <type>", "Target type to rename to")
+  .option("--write", "Write changes to files (dry-run by default)")
+  .action(migrateCommand);
 
 program
   .command("new <type>")

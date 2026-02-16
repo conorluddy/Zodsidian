@@ -1,12 +1,14 @@
 import { writeFile } from "node:fs/promises";
 import { loadSchemas, buildVaultIndex } from "@zodsidian/core";
 import { walkMarkdownFiles, filterByType } from "../utils/walk.js";
+import { loadConfigForVault } from "../utils/config-loader.js";
 import { printJson } from "../output/console-formatter.js";
 import { EXIT_RUNTIME_ERROR } from "../utils/exit-codes.js";
 
 interface IndexCommandOptions {
   type?: string;
   out?: string;
+  config?: string;
 }
 
 function serializeIndex(index: ReturnType<typeof buildVaultIndex>) {
@@ -24,11 +26,12 @@ export async function indexCommand(
 ): Promise<void> {
   try {
     loadSchemas();
+    const config = await loadConfigForVault(dir, options.config);
     let files = await walkMarkdownFiles(dir);
     if (options.type) {
       files = filterByType(files, options.type);
     }
-    const index = buildVaultIndex(files);
+    const index = buildVaultIndex(files, config);
     const serialized = serializeIndex(index);
 
     if (options.out) {
