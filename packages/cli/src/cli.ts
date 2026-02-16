@@ -16,31 +16,36 @@ program
 program
   .command("validate <dir>")
   .description("Validate frontmatter in all markdown files")
+  .option("--type <type>", "Filter to a specific document type")
   .action(validateCommand);
 
 program
   .command("fix <dir>")
   .description("Auto-fix frontmatter issues")
+  .option("--type <type>", "Filter to a specific document type")
   .option("--write", "Write fixes to files")
   .option("--unsafe", "Apply unsafe fixes (e.g. remove unknown keys)")
   .option("--dry-run", "Show what would be fixed without changing files")
+  .option("--populate", "Fill missing required fields with schema defaults")
   .action(fixCommand);
 
 program
   .command("index <dir>")
   .description("Build vault index from markdown files")
+  .option("--type <type>", "Filter to a specific document type")
   .option("--out <file>", "Write index to file instead of stdout")
   .action(indexCommand);
 
 program
   .command("report <dir>")
   .description("Print a summary report of vault health")
+  .option("--type <type>", "Filter to a specific document type")
   .action(reportCommand);
 
 program
   .command("new <type>")
   .description("Scaffold a new document from its schema")
-  .option("--project <id>", "Set projectId on the scaffolded document")
+  .option("--project <id>", "Set project on the scaffolded document")
   .option("--out <dir>", "Write to directory instead of stdout")
   .action(newCommand);
 

@@ -2,9 +2,10 @@
 type: decision
 id: dec-1
 title: Use Zod for validation
-projectId: proj-1
 decisionDate: "2026-01-15"
 outcome: Approved
+projects:
+  - proj-1
 tags:
   - architecture
 ---

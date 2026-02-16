@@ -18,7 +18,7 @@ export async function newCommand(
 
     const overrides: Record<string, unknown> = {};
     if (options.project) {
-      overrides.projectId = options.project;
+      overrides.projects = [options.project];
     }
 
     const result = scaffold(type, { overrides });

@@ -3,7 +3,8 @@ type: idea
 id: idea-1
 title: Add dark mode support
 status: draft
-projectId: proj-1
+projects:
+  - proj-1
 tags:
   - ux
   - frontend

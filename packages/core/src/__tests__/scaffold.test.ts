@@ -41,7 +41,7 @@ describe("scaffold", () => {
       overrides: {
         id: "dec-rt",
         title: "Test Decision",
-        projectId: "proj-1",
+        projects: ["proj-1"],
         decisionDate: "2026-02-15",
         outcome: "Approved",
       },

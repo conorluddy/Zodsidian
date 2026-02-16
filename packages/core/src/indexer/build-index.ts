@@ -36,20 +36,29 @@ export function buildVaultIndex(files: FileEntry[]): VaultIndex {
 
       const typeName = typeof data.type === "string" ? data.type : null;
       const entry = typeName ? getSchemaEntry(typeName) : undefined;
+      const idFieldName = entry?.idField ?? "id";
       const refFields = entry?.referenceFields ?? [];
 
       for (const field of refFields) {
-        if (typeof data[field] === "string") {
-          edges.push({ sourceFile: filePath, targetId: data[field], field });
+        const value = data[field];
+        if (typeof value === "string") {
+          edges.push({ sourceFile: filePath, targetId: value, field });
+        } else if (Array.isArray(value)) {
+          for (const element of value) {
+            if (typeof element === "string") {
+              edges.push({ sourceFile: filePath, targetId: element, field });
+            }
+          }
         }
       }
 
-      const id = typeof data.id === "string" ? data.id : null;
+      const id =
+        typeof data[idFieldName] === "string" ? (data[idFieldName] as string) : null;
       if (id) {
         idIndex.set(id, filePath);
       }
 
-      const node = createFileNode(filePath, allIssues, data);
+      const node = createFileNode(filePath, allIssues, data, idFieldName);
       totalErrors += node.errorCount;
       totalWarnings += node.warningCount;
       if (node.isValid) validFiles++;
@@ -83,13 +92,17 @@ function createFileNode(
   filePath: string,
   issues: ValidationIssue[],
   data?: Record<string, unknown>,
+  idFieldName = "id",
 ): FileNode {
   const errors = issues.filter((i) => i.severity === "error").length;
   const warnings = issues.filter((i) => i.severity === "warning").length;
   return {
     filePath,
     type: data && typeof data.type === "string" ? data.type : null,
-    id: data && typeof data.id === "string" ? data.id : null,
+    id:
+      data && typeof data[idFieldName] === "string"
+        ? (data[idFieldName] as string)
+        : null,
     title: data && typeof data.title === "string" ? data.title : null,
     isValid: errors === 0,
     errorCount: errors,

@@ -1,5 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join, extname } from "node:path";
+import { parseFrontmatter } from "@zodsidian/core";
 
 export interface WalkedFile {
   filePath: string;
@@ -24,4 +25,13 @@ export async function walkMarkdownFiles(dir: string): Promise<WalkedFile[]> {
 
   await walk(dir);
   return files;
+}
+
+export function filterByType(files: WalkedFile[], typeName: string): WalkedFile[] {
+  return files.filter(({ content }) => {
+    const parsed = parseFrontmatter(content);
+    if (!parsed.data || typeof parsed.data !== "object") return false;
+    const data = parsed.data as Record<string, unknown>;
+    return data.type === typeName;
+  });
 }

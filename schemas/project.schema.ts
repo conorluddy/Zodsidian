@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { baseFields } from "./base.js";
 
 export const projectSchema = z
   .object({
@@ -8,9 +9,7 @@ export const projectSchema = z
     status: z
       .enum(["active", "paused", "completed", "archived"])
       .describe("Current lifecycle state"),
-    tags: z.array(z.string()).default([]).describe("Freeform classification tags"),
-    created: z.string().date().optional().describe("ISO date when project was created"),
-    updated: z.string().date().optional().describe("ISO date of last update"),
+    ...baseFields,
   })
   .strict()
   .describe("A project — the top-level organizational unit in the vault");

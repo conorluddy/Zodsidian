@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { applyFixes, sortKeys } from "../autofix/index.js";
+import { applyFixes, sortKeys, populateMissingFields } from "../autofix/index.js";
+import { parseFrontmatter } from "../parser/index.js";
 import { loadSchemas, clearRegistry } from "../schema/index.js";
 
 describe("sortKeys", () => {
@@ -117,5 +118,55 @@ Body`;
 
     const result = applyFixes(content);
     expect(result.content).toContain("extraField");
+  });
+});
+
+describe("populateMissingFields", () => {
+  beforeEach(() => {
+    clearRegistry();
+    loadSchemas();
+  });
+
+  it("populates missing status and tags from schema defaults", () => {
+    const content = `---
+type: project
+id: proj-1
+title: Minimal Project
+---
+
+Body`;
+
+    const result = applyFixes(content, {
+      extraStrategies: [populateMissingFields],
+    });
+    expect(result.changed).toBe(true);
+
+    const parsed = parseFrontmatter(result.content);
+    const data = parsed.data as Record<string, unknown>;
+    expect(data.status).toBe("active");
+    expect(data.tags).toEqual([]);
+    expect(data.projects).toEqual([]);
+  });
+
+  it("does not overwrite existing values", () => {
+    const content = `---
+type: project
+id: proj-1
+title: Existing Status
+status: paused
+tags:
+  - important
+---
+
+Body`;
+
+    const result = applyFixes(content, {
+      extraStrategies: [populateMissingFields],
+    });
+
+    const parsed = parseFrontmatter(result.content);
+    const data = parsed.data as Record<string, unknown>;
+    expect(data.status).toBe("paused");
+    expect(data.tags).toEqual(["important"]);
   });
 });

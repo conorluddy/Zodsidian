@@ -68,7 +68,7 @@ export function scaffold(
  * for introspecting field types and defaults. If Zod's internals change,
  * this function is the single place that needs updating.
  */
-function extractSchemaDefaults(entry: SchemaEntry): Record<string, unknown> {
+export function extractSchemaDefaults(entry: SchemaEntry): Record<string, unknown> {
   const defaults: Record<string, unknown> = {};
   const shape = entry.schema.shape;
 

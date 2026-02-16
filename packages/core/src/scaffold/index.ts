@@ -1,5 +1,6 @@
 export {
   scaffold,
+  extractSchemaDefaults,
   type ScaffoldOptions,
   type ScaffoldResult,
   type ScaffoldError,
