@@ -174,6 +174,16 @@
   font-weight: 500;
 }
 
+/* Type Mapping Modal */
+.zodsidian-suggest-type {
+  font-weight: 500;
+}
+
+.zodsidian-suggest-preview {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
 /* Ribbon Badge */
 .zodsidian-badge {
   position: absolute;

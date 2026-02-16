@@ -9,6 +9,7 @@ import { ReportService } from "./services/report-service.js";
 import { StatusBarManager } from "./ui/status-bar.js";
 import { VALIDATION_VIEW_TYPE, ValidationView } from "./ui/validation-view.js";
 import { REPORT_VIEW_TYPE, ReportView } from "./ui/report-view.js";
+import { TypeMappingModal } from "./ui/type-mapping-modal.js";
 import {
   registerCommands,
   revealValidationPanel,
@@ -39,8 +40,9 @@ export default class ZodsidianPlugin extends Plugin {
     this.registerView(VALIDATION_VIEW_TYPE, (leaf) => new ValidationView(leaf));
     this.registerView(REPORT_VIEW_TYPE, (leaf) => {
       return new ReportView(leaf, (unknownType) => {
-        // TODO: Phase 5 - Open type mapping modal
-        new Notice(`Type mapping UI coming in Phase 5. Type: ${unknownType}`);
+        new TypeMappingModal(this.app, unknownType, this.configService, () => {
+          this.refreshReport();
+        }).open();
       });
     });
 
@@ -171,6 +173,25 @@ export default class ZodsidianPlugin extends Plugin {
       }
     } catch (err) {
       console.error("Zodsidian background scan failed:", err);
+    }
+  }
+
+  private async refreshReport(): Promise<void> {
+    try {
+      const report = await this.reportService.buildReport();
+      this.unknownTypeCount = report.unknownTypes.length;
+      this.updateRibbonBadge();
+
+      // Update report view if open
+      const leaf = this.app.workspace.getLeavesOfType(REPORT_VIEW_TYPE)[0];
+      if (leaf) {
+        const view = leaf.view;
+        if (view instanceof ReportView) {
+          view.setReport(report);
+        }
+      }
+    } catch (err) {
+      console.error("Zodsidian report refresh failed:", err);
     }
   }
 
