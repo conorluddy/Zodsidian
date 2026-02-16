@@ -1,6 +1,8 @@
 import type { ZodError, ZodIssue } from "zod";
 import { IssueCode } from "../types/index.js";
 import type { ValidationIssue } from "../types/index.js";
+import type { ZodsidianConfig } from "../config/index.js";
+import { resolveType } from "../config/index.js";
 import { getSchema } from "../schema/index.js";
 
 function mapZodIssue(issue: ZodIssue): ValidationIssue {
@@ -24,10 +26,14 @@ function mapZodIssue(issue: ZodIssue): ValidationIssue {
   };
 }
 
-export function validateFrontmatter(data: Record<string, unknown>): ValidationIssue[] {
-  const type = data.type;
+export function validateFrontmatter(
+  data: Record<string, unknown>,
+  config?: ZodsidianConfig,
+): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  const userType = data.type;
 
-  if (typeof type !== "string" || type.length === 0) {
+  if (typeof userType !== "string" || userType.length === 0) {
     return [
       {
         severity: "error",
@@ -38,22 +44,40 @@ export function validateFrontmatter(data: Record<string, unknown>): ValidationIs
     ];
   }
 
-  const schema = getSchema(type);
+  // Resolve type using config mappings
+  const canonicalType = resolveType(userType, config);
+
+  // Emit warning if type was mapped and warnings are enabled
+  if (canonicalType !== userType && config?.validation?.warnOnMappedTypes) {
+    issues.push({
+      severity: "warning",
+      code: IssueCode.FM_MAPPED_TYPE,
+      message: `Type "${userType}" is mapped to "${canonicalType}"`,
+      suggestion: `Consider migrating: zodsidian migrate --from "${userType}" --to "${canonicalType}"`,
+      path: ["type"],
+    });
+  }
+
+  const schema = getSchema(canonicalType);
   if (!schema) {
-    return [
-      {
-        severity: "warning",
-        code: IssueCode.FM_UNKNOWN_TYPE,
-        message: `Unknown frontmatter type: "${type}"`,
-        suggestion: `Register a schema for type "${type}"`,
-      },
-    ];
+    issues.push({
+      severity: "warning",
+      code: IssueCode.FM_UNKNOWN_TYPE,
+      message: `Unknown frontmatter type: "${canonicalType}"`,
+      suggestion: `Register a schema for type "${canonicalType}"`,
+    });
+    return issues;
   }
 
-  const result = schema.safeParse(data);
+  // If type was mapped, create a copy of the data with the canonical type for schema validation
+  const dataForValidation =
+    canonicalType !== userType ? { ...data, type: canonicalType } : data;
+
+  const result = schema.safeParse(dataForValidation);
   if (result.success) {
-    return [];
+    return issues;
   }
 
-  return (result.error as ZodError).issues.map(mapZodIssue);
+  const schemaIssues = (result.error as ZodError).issues.map(mapZodIssue);
+  return [...issues, ...schemaIssues];
 }
