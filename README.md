@@ -180,6 +180,19 @@ zodsidian query <dir> --id <id> --refs    # node with incoming/outgoing refs
 
 **Zod with `.describe()`.** Every schema and every field uses Zod's `.describe()` decorator. Descriptions serve as documentation for humans, help text for CLI, and introspection for AI. The schema is the single source of truth for what a field means, not just what shape it has.
 
+## Documentation map
+
+- **[README.md](./README.md)** (this file) — Project overview, quick start, CLI usage
+- **[CLAUDE.md](./CLAUDE.md)** — Architecture principles, project tree, maintenance guide
+- **[CODESTYLE.md](./CODESTYLE.md)** — Code style conventions
+
+**Package documentation:**
+
+- **[schemas/README.md](./schemas/README.md)** — Schema conventions, adding new types
+- **[packages/core/README.md](./packages/core/README.md)** — Core architecture, module guide
+- **[packages/cli/README.md](./packages/cli/README.md)** — CLI commands, flags, examples
+- **[packages/obsidian-plugin/README.md](./packages/obsidian-plugin/README.md)** — Plugin architecture, features
+
 ## Architecture
 
 ```
