@@ -3,6 +3,7 @@ import type { ValidationIssue } from "@zodsidian/core";
 import { DEFAULT_SETTINGS, type ZodsidianSettings } from "./settings/settings.js";
 import { ZodsidianSettingTab } from "./settings/settings-tab.js";
 import { VaultAdapter } from "./services/vault-adapter.js";
+import { ConfigService } from "./services/config-service.js";
 import { ValidationService } from "./services/validation-service.js";
 import { StatusBarManager } from "./ui/status-bar.js";
 import { VALIDATION_VIEW_TYPE, ValidationView } from "./ui/validation-view.js";
@@ -11,6 +12,7 @@ import { registerCommands, revealValidationPanel } from "./commands/plugin-comma
 export default class ZodsidianPlugin extends Plugin {
   settings!: ZodsidianSettings;
   vaultAdapter!: VaultAdapter;
+  configService!: ConfigService;
   validationService!: ValidationService;
   private statusBar!: StatusBarManager;
 
@@ -18,7 +20,10 @@ export default class ZodsidianPlugin extends Plugin {
     await this.loadSettings();
 
     this.vaultAdapter = new VaultAdapter(this.app);
-    this.validationService = new ValidationService(this.vaultAdapter);
+    this.configService = new ConfigService(this.app);
+    await this.configService.loadConfig(this.settings);
+    this.configService.startWatching(this.settings);
+    this.validationService = new ValidationService(this.vaultAdapter, this.configService);
     this.statusBar = new StatusBarManager(this);
 
     this.registerView(VALIDATION_VIEW_TYPE, (leaf) => new ValidationView(leaf));
@@ -88,6 +93,7 @@ export default class ZodsidianPlugin extends Plugin {
   }
 
   onunload(): void {
+    this.configService.stopWatching();
     this.statusBar.clear();
     this.validationService.clearCache();
   }
