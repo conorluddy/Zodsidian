@@ -184,15 +184,21 @@ Type mapping enables gradual migration — validate immediately, migrate when co
 ## CLI usage
 
 ```bash
-zodsidian validate <dir> [--config <path>]       # validate all markdown files
-zodsidian fix <dir> [--write] [--unsafe] [--config <path>]  # auto-fix frontmatter issues
-zodsidian fix <dir> --dry-run                    # preview fixes without writing
-zodsidian index <dir> [--out <file>] [--config <path>]  # build vault index (JSON)
-zodsidian report <dir> [--config <path>]         # print vault health summary
-zodsidian new <type> [--project <id>] [--out <dir>]  # scaffold a new document
-zodsidian query <dir> [--type <type>] [--id <id>] [--refs]  # query vault graph
-zodsidian detect <dir> [--config <path>] [--json]  # detect unknown types
-zodsidian migrate <dir> --from <old> --to <new> [--write]  # migrate types
+# Validation & fixing
+zodsidian validate <dir> [--type <t>] [--config <path>]
+zodsidian fix <dir> [--write] [--unsafe] [--populate] [--type <t>] [--dry-run] [--config <path>]
+
+# Indexing & reporting
+zodsidian index <dir> [--out <file>] [--type <t>] [--config <path>]
+zodsidian report <dir> [--type <t>] [--config <path>]
+
+# Scaffolding & querying
+zodsidian new <type> [--project <id>] [--out <dir>]
+zodsidian query <dir> [--type <type>] [--id <id>] [--refs]
+
+# Type mapping
+zodsidian detect <dir> [--config <path>] [--json]
+zodsidian migrate <dir> --from <old> --to <new> [--write]
 ```
 
 ### Scaffolding
@@ -210,6 +216,33 @@ zodsidian query <dir> --type <type>       # list all nodes of a type (JSON)
 zodsidian query <dir> --id <id>           # look up a single node
 zodsidian query <dir> --id <id> --refs    # node with incoming/outgoing refs
 ```
+
+## Obsidian plugin
+
+The plugin surfaces Zodsidian's core engine directly in Obsidian — no CLI required for day-to-day use.
+
+**Side-panel views:**
+
+- **Validation panel** (shield-check icon) — shows errors and warnings for the active file
+- **Vault Report** (bar-chart icon) — vault-wide health summary with per-type stats
+
+**Status bar** — live error/warning count for the active file, updated on every save.
+
+**On-save validation** — configurable `validateOnSave` setting; debounced to avoid thrashing during edits.
+
+**Background scan** — runs on load, populates the ribbon badge with the count of files that have unrecognised types.
+
+**Type mapping UI** — unknown types appear in the Vault Report with a "Map..." button. Clicking opens a fuzzy-match `SuggestModal` to pick the canonical schema type. The mapping is written to `zodsidian.config.json` and the report refreshes automatically.
+
+**First-run notice** — if unknown types are detected on load, a notice guides users to the type mapping UI.
+
+**Commands (command palette):**
+
+- Validate current file
+- Validate vault
+- Fix current file
+- Open Validation panel
+- Open Vault Report
 
 ## Design principles
 
@@ -247,22 +280,24 @@ packages/cli            → @zodsidian/cli        (CLI commands)
 packages/obsidian-plugin → @zodsidian/obsidian-plugin
 ```
 
-**Pipeline:** Parse → Validate → Index → Report → Autofix
+**Pipeline:** Parse → Validate → Index → Report → Autofix → Scaffold → Query
 
 1. **Parse** — `gray-matter` extracts YAML frontmatter
 2. **Validate** — schema registry resolves `type` → Zod schema, runs `.strict()` parse
 3. **Index** — builds vault-wide index (file map, ID index, reference edges, stats)
 4. **Report** — formats issues with file paths, severity, suggestions
 5. **Autofix** — applies fix strategies (normalize tags, sort keys, remove unknown keys)
+6. **Scaffold** — generates new documents from schema definitions; no template files
+7. **Query** — loads vault into a typed in-memory graph; queryable by type, ID, or refs
 
 ## Packages
 
-| Package                      | Description                                               |
-| ---------------------------- | --------------------------------------------------------- |
-| `@zodsidian/schemas`         | Zod schema definitions (single source of truth)           |
-| `@zodsidian/core`            | Parsing, validation, autofix, indexing, reporting         |
-| `@zodsidian/cli`             | CLI: `validate`, `fix`, `index`, `report`, `new`, `query` |
-| `@zodsidian/obsidian-plugin` | Obsidian plugin with live validation and autofix          |
+| Package                      | Description                                                      |
+| ---------------------------- | ---------------------------------------------------------------- |
+| `@zodsidian/schemas`         | Zod schema definitions (single source of truth)                  |
+| `@zodsidian/core`            | Parsing, validation, autofix, indexing, reporting                |
+| `@zodsidian/cli`             | CLI: `validate`, `fix`, `index`, `report`, `new`, `query`        |
+| `@zodsidian/obsidian-plugin` | Obsidian plugin: validation panel, vault report, type mapping UI |
 
 ## Development
 
