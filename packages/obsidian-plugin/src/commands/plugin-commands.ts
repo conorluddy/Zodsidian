@@ -2,6 +2,7 @@ import { Notice } from "obsidian";
 import type ZodsidianPlugin from "../main.js";
 import { applyFixes, type ValidationIssue } from "@zodsidian/core";
 import { VALIDATION_VIEW_TYPE, ValidationView } from "../ui/validation-view.js";
+import { REPORT_VIEW_TYPE, ReportView } from "../ui/report-view.js";
 
 export function registerCommands(plugin: ZodsidianPlugin): void {
   plugin.addCommand({
@@ -74,6 +75,14 @@ export function registerCommands(plugin: ZodsidianPlugin): void {
       await revealValidationPanel(plugin);
     },
   });
+
+  plugin.addCommand({
+    id: "open-report",
+    name: "Open vault report",
+    callback: async () => {
+      await revealReportView(plugin);
+    },
+  });
 }
 
 export async function revealValidationPanel(plugin: ZodsidianPlugin): Promise<void> {
@@ -95,6 +104,22 @@ export async function revealValidationPanel(plugin: ZodsidianPlugin): Promise<vo
   }
 }
 
+export async function revealReportView(plugin: ZodsidianPlugin): Promise<void> {
+  const existing = plugin.app.workspace.getLeavesOfType(REPORT_VIEW_TYPE);
+  if (existing.length === 0) {
+    const leaf = plugin.app.workspace.getRightLeaf(false);
+    if (leaf) {
+      await leaf.setViewState({ type: REPORT_VIEW_TYPE, active: true });
+    }
+  } else {
+    plugin.app.workspace.revealLeaf(existing[0]);
+  }
+
+  // Build and display the report
+  const report = await plugin.reportService.buildReport();
+  updateReportView(plugin, report);
+}
+
 function updateValidationView(
   plugin: ZodsidianPlugin,
   filePath: string,
@@ -106,5 +131,17 @@ function updateValidationView(
   const view = leaf.view;
   if (view instanceof ValidationView) {
     view.setFileResult(filePath, issues, isTyped);
+  }
+}
+
+function updateReportView(
+  plugin: ZodsidianPlugin,
+  report: import("../services/report-service.js").VaultReport,
+): void {
+  const leaf = plugin.app.workspace.getLeavesOfType(REPORT_VIEW_TYPE)[0];
+  if (!leaf) return;
+  const view = leaf.view;
+  if (view instanceof ReportView) {
+    view.setReport(report);
   }
 }

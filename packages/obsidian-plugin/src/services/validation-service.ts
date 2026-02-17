@@ -3,10 +3,12 @@ import {
   loadSchemas,
   parseFrontmatter,
   validateFrontmatter,
+  resolveType,
   getRegisteredTypes,
   type ValidationIssue,
 } from "@zodsidian/core";
 import { VaultAdapter } from "./vault-adapter.js";
+import type { ConfigService } from "./config-service.js";
 
 export interface ValidationResult {
   issues: ValidationIssue[];
@@ -17,11 +19,15 @@ export class ValidationService {
   private cache = new Map<string, ValidationResult>();
   private debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-  constructor(private vault: VaultAdapter) {
+  constructor(
+    private vault: VaultAdapter,
+    private configService?: ConfigService,
+  ) {
     loadSchemas();
   }
 
   async validateFile(file: TFile): Promise<ValidationResult> {
+    const config = this.configService?.getConfig();
     const content = await this.vault.readFile(file);
     const parsed = parseFrontmatter(content);
     if (!parsed.data || typeof parsed.data !== "object") {
@@ -32,9 +38,11 @@ export class ValidationService {
 
     const data = parsed.data as Record<string, unknown>;
     const typeName = typeof data.type === "string" ? data.type : null;
-    const isTyped = typeName !== null && getRegisteredTypes().includes(typeName);
+    const canonicalType = typeName ? resolveType(typeName, config) : null;
+    const isTyped =
+      canonicalType !== null && getRegisteredTypes().includes(canonicalType);
 
-    const schemaIssues = validateFrontmatter(data);
+    const schemaIssues = validateFrontmatter(data, config);
     const allIssues = [...parsed.issues, ...schemaIssues];
     const result: ValidationResult = { issues: allIssues, isTyped };
     this.cache.set(file.path, result);

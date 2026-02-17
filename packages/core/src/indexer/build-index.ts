@@ -4,6 +4,8 @@ import type {
   VaultIndex,
   ValidationIssue,
 } from "../types/index.js";
+import type { ZodsidianConfig } from "../config/index.js";
+import { resolveType } from "../config/index.js";
 import { parseFrontmatter } from "../parser/index.js";
 import { validateFrontmatter } from "../validator/index.js";
 import { getSchemaEntry } from "../schema/index.js";
@@ -17,7 +19,10 @@ interface FileEntry {
 // PUBLIC API
 // ========================================
 
-export function buildVaultIndex(files: FileEntry[]): VaultIndex {
+export function buildVaultIndex(
+  files: FileEntry[],
+  config?: ZodsidianConfig,
+): VaultIndex {
   const fileNodes = new Map<string, FileNode>();
   const idIndex = new Map<string, string>();
   const edges: ReferenceEdge[] = [];
@@ -31,11 +36,12 @@ export function buildVaultIndex(files: FileEntry[]): VaultIndex {
 
     if (parsed.data && typeof parsed.data === "object") {
       const data = parsed.data as Record<string, unknown>;
-      const schemaIssues = validateFrontmatter(data);
+      const schemaIssues = validateFrontmatter(data, config);
       allIssues = [...allIssues, ...schemaIssues];
 
-      const typeName = typeof data.type === "string" ? data.type : null;
-      const entry = typeName ? getSchemaEntry(typeName) : undefined;
+      const userType = typeof data.type === "string" ? data.type : null;
+      const canonicalType = userType ? resolveType(userType, config) : null;
+      const entry = canonicalType ? getSchemaEntry(canonicalType) : undefined;
       const idFieldName = entry?.idField ?? "id";
       const refFields = entry?.referenceFields ?? [];
 

@@ -140,16 +140,59 @@ zodsidian fix ./vault --write --unsafe # also remove unknown keys
 zodsidian fix ./vault --dry-run        # preview without writing
 ```
 
+### 5. Type Mapping
+
+Onboard existing vaults with custom type conventions:
+
+**The problem:** You have an existing vault with `type: "project-index"` in 50 files, but Zodsidian expects `type: "project"`.
+
+**The solution:** Map your custom types to canonical schema types:
+
+```bash
+# Detect unknown types in your vault
+zodsidian detect ./vault
+# Output: project-index (50 files), decision-log (12 files)
+
+# Create a mapping configuration
+cat > zodsidian.config.json <<EOF
+{
+  "version": "1.0",
+  "typeMappings": {
+    "project-index": "project",
+    "decision-log": "decision"
+  }
+}
+EOF
+
+# Now validation uses the mappings
+zodsidian validate ./vault
+# Files with type: "project-index" validate against the project schema
+
+# When ready, migrate to canonical types
+zodsidian migrate ./vault --from project-index --to project --write
+```
+
+**In the Obsidian plugin:**
+
+- Unknown types show in the vault report view with a badge count
+- Click "Map..." to choose the canonical type
+- Mappings save to `zodsidian.config.json`
+- Report refreshes automatically
+
+Type mapping enables gradual migration — validate immediately, migrate when convenient.
+
 ## CLI usage
 
 ```bash
-zodsidian validate <dir>                         # validate all markdown files
-zodsidian fix <dir> [--write] [--unsafe]         # auto-fix frontmatter issues
+zodsidian validate <dir> [--config <path>]       # validate all markdown files
+zodsidian fix <dir> [--write] [--unsafe] [--config <path>]  # auto-fix frontmatter issues
 zodsidian fix <dir> --dry-run                    # preview fixes without writing
-zodsidian index <dir> [--out <file>]             # build vault index (JSON)
-zodsidian report <dir>                           # print vault health summary
+zodsidian index <dir> [--out <file>] [--config <path>]  # build vault index (JSON)
+zodsidian report <dir> [--config <path>]         # print vault health summary
 zodsidian new <type> [--project <id>] [--out <dir>]  # scaffold a new document
 zodsidian query <dir> [--type <type>] [--id <id>] [--refs]  # query vault graph
+zodsidian detect <dir> [--config <path>] [--json]  # detect unknown types
+zodsidian migrate <dir> --from <old> --to <new> [--write]  # migrate types
 ```
 
 ### Scaffolding
@@ -241,11 +284,16 @@ pnpm format
 - Schema-driven scaffolding (`zodsidian new <type>`)
 - In-memory typed graph with query API (`zodsidian query`)
 - Schema metadata registry — reference fields and key order derived from schema definitions
-- CLI commands — `validate`, `fix`, `index`, `report`, `new`, `query`
-- Obsidian plugin skeleton with live validation and settings UI
+- CLI commands — `validate`, `fix`, `index`, `report`, `new`, `query`, `detect`, `migrate`
+- **Type mapping system** — map custom types to canonical schemas for existing vaults
+  - Config file support (`zodsidian.config.json`)
+  - Unknown type detection (`zodsidian detect`)
+  - Bulk type migration (`zodsidian migrate`)
+  - Plugin UI with vault report view and mapping modal
+- Obsidian plugin with live validation, vault report, and type mapping UI
 - Reporter with formatted output and vault health summaries
 
 **Next:**
 
 - Additional schema types (techdebt, issue)
-- Obsidian plugin polish — status bar, validation view, scaffold/query integration
+- Plugin enhancements — inline validation, quick fixes, better status indicators
