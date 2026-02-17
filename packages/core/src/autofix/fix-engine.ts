@@ -1,5 +1,7 @@
 import { parseFrontmatter } from "../parser/index.js";
 import { getSchemaEntry } from "../schema/index.js";
+import { resolveType } from "../config/index.js";
+import type { ZodsidianConfig } from "../config/index.js";
 import {
   normalizeTags,
   sortKeysBySchema,
@@ -11,6 +13,7 @@ import { stringifyFrontmatter } from "./yaml-util.js";
 export interface FixOptions {
   unsafe?: boolean;
   extraStrategies?: FixStrategy[];
+  config?: ZodsidianConfig;
 }
 
 export interface FixResult {
@@ -28,8 +31,9 @@ export function applyFixes(fileContent: string, options: FixOptions = {}): FixRe
   const strategies: FixStrategy[] = [normalizeTags, sortKeysBySchema];
 
   if (options.unsafe) {
-    const typeName = typeof data.type === "string" ? data.type : undefined;
-    const entry = typeName ? getSchemaEntry(typeName) : undefined;
+    const userType = typeof data.type === "string" ? data.type : undefined;
+    const canonicalType = userType ? resolveType(userType, options.config) : undefined;
+    const entry = canonicalType ? getSchemaEntry(canonicalType) : undefined;
     if (entry) {
       strategies.push(removeUnknownKeys(new Set(Object.keys(entry.schema.shape))));
     }

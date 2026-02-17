@@ -6,6 +6,7 @@ import {
   validateVault,
 } from "@zodsidian/core";
 import { walkMarkdownFiles, filterByType } from "../utils/walk.js";
+import { loadConfigForVault } from "../utils/config-loader.js";
 import { printIssue, printSummary } from "../output/console-formatter.js";
 import {
   EXIT_SUCCESS,
@@ -15,6 +16,7 @@ import {
 
 interface ValidateCommandOptions {
   type?: string;
+  config?: string;
 }
 
 export async function validateCommand(
@@ -23,12 +25,13 @@ export async function validateCommand(
 ): Promise<void> {
   try {
     loadSchemas();
+    const config = await loadConfigForVault(dir, options.config);
     let files = await walkMarkdownFiles(dir);
     if (options.type) {
       files = filterByType(files, options.type);
     }
     const contentByPath = new Map(files.map((f) => [f.filePath, f.content]));
-    const index = buildVaultIndex(files);
+    const index = buildVaultIndex(files, config);
     const vaultResult = validateVault(index);
 
     let hasErrors = index.stats.errorCount > 0;
@@ -41,7 +44,7 @@ export async function validateCommand(
         const issues = parsed.data
           ? [
               ...parsed.issues,
-              ...validateFrontmatter(parsed.data as Record<string, unknown>),
+              ...validateFrontmatter(parsed.data as Record<string, unknown>, config),
             ]
           : parsed.issues;
         for (const issue of issues) {

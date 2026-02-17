@@ -7,6 +7,7 @@ import {
   type FixStrategy,
 } from "@zodsidian/core";
 import { walkMarkdownFiles, filterByType } from "../utils/walk.js";
+import { loadConfigForVault } from "../utils/config-loader.js";
 import { EXIT_RUNTIME_ERROR } from "../utils/exit-codes.js";
 
 interface FixCommandOptions {
@@ -15,11 +16,13 @@ interface FixCommandOptions {
   unsafe?: boolean;
   dryRun?: boolean;
   populate?: boolean;
+  config?: string;
 }
 
 export async function fixCommand(dir: string, options: FixCommandOptions): Promise<void> {
   try {
     loadSchemas();
+    const config = await loadConfigForVault(dir, options.config);
     let files = await walkMarkdownFiles(dir);
     if (options.type) {
       files = filterByType(files, options.type);
@@ -36,6 +39,7 @@ export async function fixCommand(dir: string, options: FixCommandOptions): Promi
       const result = applyFixes(content, {
         unsafe: options.unsafe,
         extraStrategies: extraStrategies.length > 0 ? extraStrategies : undefined,
+        config,
       });
       if (!result.changed) continue;
 
