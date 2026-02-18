@@ -46,20 +46,20 @@ describe("validateFrontmatter", () => {
     expect(issues.length).toBeGreaterThan(0);
   });
 
-  it("validates a correct idea", () => {
+  it("validates a correct brainstorm", () => {
     const issues = validateFrontmatter({
-      type: "idea",
-      id: "idea-1",
+      type: "brainstorm",
+      id: "brain-1",
       title: "Dark mode",
       status: "draft",
     });
     expect(issues).toHaveLength(0);
   });
 
-  it("validates idea with projects array", () => {
+  it("validates brainstorm with projects array", () => {
     const issues = validateFrontmatter({
-      type: "idea",
-      id: "idea-2",
+      type: "brainstorm",
+      id: "brain-2",
       title: "Linked idea",
       status: "proposed",
       projects: ["proj-1"],
@@ -67,10 +67,10 @@ describe("validateFrontmatter", () => {
     expect(issues).toHaveLength(0);
   });
 
-  it("rejects idea with invalid status", () => {
+  it("rejects brainstorm with invalid status", () => {
     const issues = validateFrontmatter({
-      type: "idea",
-      id: "idea-3",
+      type: "brainstorm",
+      id: "brain-3",
       title: "Bad status",
       status: "invalid-status",
     });

@@ -1,6 +1,6 @@
 ---
-type: idea
-id: idea-1
+type: brainstorm
+id: brain-1
 title: Add dark mode support
 status: draft
 projects:

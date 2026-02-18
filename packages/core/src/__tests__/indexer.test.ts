@@ -62,8 +62,8 @@ status: active
       {
         filePath: "ideas/dark-mode.md",
         content: `---
-type: idea
-id: idea-1
+type: brainstorm
+id: brain-1
 title: Dark mode
 status: draft
 projects:
@@ -84,14 +84,14 @@ projects:
   it("indexes custom reference fields from schema metadata", () => {
     const taskSchema = z
       .object({
-        type: z.literal("task"),
+        type: z.literal("custom-task"),
         id: z.string().min(1),
         title: z.string().min(1),
         assigneeId: z.string().min(1),
       })
       .strict();
 
-    registerSchema("task", taskSchema, {
+    registerSchema("custom-task", taskSchema, {
       referenceFields: ["assigneeId"],
     });
 
@@ -99,7 +99,7 @@ projects:
       {
         filePath: "tasks/t1.md",
         content: `---
-type: task
+type: custom-task
 id: task-1
 title: Do stuff
 assigneeId: user-42
@@ -168,8 +168,8 @@ status: active
       {
         filePath: "ideas/cross-project.md",
         content: `---
-type: idea
-id: idea-cross
+type: brainstorm
+id: brain-cross
 title: Cross-project idea
 status: draft
 projects:

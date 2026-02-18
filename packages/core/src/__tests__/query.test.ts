@@ -36,10 +36,10 @@ projects:
 ---`,
     },
     {
-      filePath: "ideas/dark-mode.md",
+      filePath: "brainstorms/dark-mode.md",
       content: `---
-type: idea
-id: idea-1
+type: brainstorm
+id: brain-1
 title: Dark mode
 status: draft
 projects:
@@ -67,7 +67,7 @@ describe("VaultGraph", () => {
     const graph = buildTestGraph();
     expect(graph.nodesByType("project")).toHaveLength(2);
     expect(graph.nodesByType("decision")).toHaveLength(1);
-    expect(graph.nodesByType("idea")).toHaveLength(1);
+    expect(graph.nodesByType("brainstorm")).toHaveLength(1);
     expect(graph.nodesByType("nonexistent")).toHaveLength(0);
   });
 
@@ -96,8 +96,8 @@ describe("VaultGraph", () => {
     const refs = graph.referencesTo("proj-alpha");
     expect(refs).toHaveLength(2);
     expect(refs.map((r) => r.sourceFile).sort()).toEqual([
+      "brainstorms/dark-mode.md",
       "decisions/use-zod.md",
-      "ideas/dark-mode.md",
     ]);
   });
 

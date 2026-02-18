@@ -97,17 +97,21 @@ describe("ingest merge logic", () => {
     const parsed = parseFrontmatter(content);
     expect(parsed.isValid).toBe(true);
 
-    const entry = getSchemaEntry("idea")!;
+    const entry = getSchemaEntry("brainstorm")!;
     const defaults = extractSchemaDefaults(entry);
     const existing = parsed.data as Record<string, unknown>;
 
-    const merged: Record<string, unknown> = { ...defaults, ...existing, type: "idea" };
+    const merged: Record<string, unknown> = {
+      ...defaults,
+      ...existing,
+      type: "brainstorm",
+    };
 
     // Extra fields are preserved (they'll fail validation but aren't lost)
     expect(merged.customField).toBe("custom-value");
     expect(merged.anotherExtra).toBe(42);
     // Schema fields present
     expect(merged.title).toBe("Has Extras");
-    expect(merged.type).toBe("idea");
+    expect(merged.type).toBe("brainstorm");
   });
 });

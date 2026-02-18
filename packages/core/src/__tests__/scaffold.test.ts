@@ -54,9 +54,9 @@ describe("scaffold", () => {
     expect(issues).toHaveLength(0);
   });
 
-  it("scaffolded idea with minimal overrides validates without errors", () => {
-    const result = scaffold("idea", {
-      overrides: { id: "idea-rt", title: "Test Idea" },
+  it("scaffolded brainstorm with minimal overrides validates without errors", () => {
+    const result = scaffold("brainstorm", {
+      overrides: { id: "brain-rt", title: "Test Brainstorm" },
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;

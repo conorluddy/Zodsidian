@@ -73,7 +73,7 @@ describe("Config", () => {
       };
 
       expect(resolveType("decision", config)).toBe("decision");
-      expect(resolveType("idea", config)).toBe("idea");
+      expect(resolveType("brainstorm", config)).toBe("brainstorm");
     });
 
     it("returns original type when config is undefined", () => {
