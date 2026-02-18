@@ -124,6 +124,7 @@ The inferred type is used throughout core, CLI, and plugin code for type safety.
 | `project`  | `id`     | `projects`       | Top-level organizational unit             |
 | `decision` | `id`     | `projects`       | Architecture decision linked to a project |
 | `idea`     | `id`     | `projects`       | Raw idea linked to a project              |
+| `plan`     | `id`     | `projects`       | Implementation strategy for a task        |
 
 **Reference fields** are array fields that hold IDs of other documents. The indexer and validator use these to build the reference graph and detect broken links.
 
@@ -275,6 +276,7 @@ schemas/
 ├── project.schema.ts    # Project schema definition
 ├── decision.schema.ts   # Decision schema definition
 ├── idea.schema.ts       # Idea schema definition
+├── plan.schema.ts       # Plan schema definition
 └── index.ts             # Package exports
 ```
 

@@ -1,4 +1,9 @@
-import { projectSchema, decisionSchema, ideaSchema } from "@zodsidian/schemas";
+import {
+  projectSchema,
+  decisionSchema,
+  ideaSchema,
+  planSchema,
+} from "@zodsidian/schemas";
 import { registerSchema } from "./registry.js";
 
 export function loadSchemas(): void {
@@ -13,5 +18,10 @@ export function loadSchemas(): void {
   registerSchema("idea", ideaSchema, {
     idField: "id",
     referenceFields: ["projects"],
+  });
+  registerSchema("plan", planSchema, {
+    idField: "id",
+    referenceFields: ["projects"],
+    keyOrder: ["type", "id", "title", "status", "projects", "tags", "created", "updated"],
   });
 }

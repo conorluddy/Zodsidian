@@ -66,6 +66,33 @@ describe("scaffold", () => {
     expect(issues).toHaveLength(0);
   });
 
+  it("scaffolded plan with overrides validates without errors", () => {
+    const result = scaffold("plan", {
+      overrides: { id: "plan-rt", title: "Test Plan" },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const parsed = parseFrontmatter(result.value.content);
+    const issues = validateFrontmatter(parsed.data as Record<string, unknown>);
+    expect(issues).toHaveLength(0);
+  });
+
+  it("orders plan keys according to schema definition", () => {
+    const result = scaffold("plan", {
+      overrides: { id: "plan-ord", title: "Ordered Plan" },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const parsed = parseFrontmatter(result.value.content);
+    const keys = Object.keys(parsed.data as Record<string, unknown>);
+    expect(keys[0]).toBe("type");
+    expect(keys[1]).toBe("id");
+    expect(keys[2]).toBe("title");
+    expect(keys[3]).toBe("status");
+  });
+
   it("returns error for unknown schema type", () => {
     const result = scaffold("nonexistent");
     expect(result.ok).toBe(false);
