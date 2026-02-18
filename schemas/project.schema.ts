@@ -9,6 +9,12 @@ export const projectSchema = z
     status: z
       .enum(["active", "paused", "completed", "archived"])
       .describe("Current lifecycle state"),
+    platforms: z
+      .array(z.string())
+      .optional()
+      .describe("Target platforms (e.g. ios, web, cli)"),
+    ios_repo: z.string().optional().describe("Path or URL to the iOS repository"),
+    web_repo: z.string().optional().describe("Path or URL to the web repository"),
     ...baseFields,
   })
   .strict()

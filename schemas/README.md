@@ -128,6 +128,16 @@ The inferred type is used throughout core, CLI, and plugin code for type safety.
 
 **Reference fields** are array fields that hold IDs of other documents. The indexer and validator use these to build the reference graph and detect broken links.
 
+### Project-specific fields
+
+In addition to base fields, `project` documents support:
+
+| Field       | Type       | Required | Description                           |
+| ----------- | ---------- | -------- | ------------------------------------- |
+| `platforms` | `string[]` | No       | Target platforms (e.g. ios, web, cli) |
+| `ios_repo`  | `string`   | No       | Path or URL to the iOS repository     |
+| `web_repo`  | `string`   | No       | Path or URL to the web repository     |
+
 ## Adding a New Schema
 
 To add a new document type (e.g., `techdebt`):
