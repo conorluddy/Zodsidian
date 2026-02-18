@@ -1,6 +1,6 @@
 import { Notice } from "obsidian";
 import type ZodsidianPlugin from "../main.js";
-import { applyFixes, getRegisteredTypes, type ValidationIssue } from "@zodsidian/core";
+import { getRegisteredTypes, type ValidationIssue } from "@zodsidian/core";
 import { VALIDATION_VIEW_TYPE, ValidationView } from "../ui/validation-view.js";
 import { REPORT_VIEW_TYPE, ReportView } from "../ui/report-view.js";
 
@@ -52,19 +52,9 @@ export function registerCommands(plugin: ZodsidianPlugin): void {
   plugin.addCommand({
     id: "fix-current-file",
     name: "Fix current file",
-    editorCallback: async (editor, ctx) => {
+    editorCallback: (_editor, ctx) => {
       if (!ctx.file) return;
-      const content = await plugin.vaultAdapter.readFile(ctx.file);
-      const result = applyFixes(content);
-
-      if (!result.changed) {
-        new Notice("Zodsidian: Nothing to fix.");
-        return;
-      }
-
-      await plugin.vaultAdapter.writeFile(ctx.file, result.content);
-      editor.setValue(result.content);
-      new Notice("Zodsidian: File fixed.");
+      plugin.fixFile(ctx.file.path);
     },
   });
 

@@ -16,6 +16,7 @@ export class ValidationView extends ItemView {
   constructor(
     leaf: WorkspaceLeaf,
     private onConvert?: (filePath: string, type: string) => void,
+    private onFix?: (filePath: string) => void,
   ) {
     super(leaf);
   }
@@ -94,6 +95,16 @@ export class ValidationView extends ItemView {
 
     const errors = this.state.issues.filter((i) => i.severity === "error");
     const warnings = this.state.issues.filter((i) => i.severity === "warning");
+
+    if (this.onFix && this.state.filePath) {
+      const filePath = this.state.filePath;
+      const actionBar = panel.createDiv({ cls: "zodsidian-action-bar" });
+      const fixBtn = actionBar.createEl("button", {
+        text: "Fix",
+        cls: "zodsidian-fix-btn",
+      });
+      fixBtn.addEventListener("click", () => this.onFix!(filePath));
+    }
 
     for (const issue of [...errors, ...warnings]) {
       this.renderIssue(panel, issue);

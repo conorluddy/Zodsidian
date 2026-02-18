@@ -10,6 +10,19 @@ export function loadSchemas(): void {
   registerSchema("project", projectSchema, {
     idField: "id",
     referenceFields: ["projects"],
+    keyOrder: [
+      "type",
+      "id",
+      "title",
+      "status",
+      "platforms",
+      "ios_repo",
+      "web_repo",
+      "projects",
+      "tags",
+      "created",
+      "updated",
+    ],
   });
   registerSchema("decision", decisionSchema, {
     idField: "id",
