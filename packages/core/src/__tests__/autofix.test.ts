@@ -35,6 +35,22 @@ describe("applyFixes", () => {
     loadSchemas();
   });
 
+  it("normalizes scalar projects to array", () => {
+    const content = `---
+type: decision
+id: dec-1
+title: Test
+status: accepted
+projects: proj-1
+---
+
+Body`;
+
+    const result = applyFixes(content);
+    expect(result.content).toContain("- proj-1");
+    expect(result.changed).toBe(true);
+  });
+
   it("normalizes string tags to array", () => {
     const content = `---
 type: project

@@ -1,7 +1,7 @@
 export { applyFixes, type FixOptions, type FixResult } from "./fix-engine.js";
 export { sortKeys } from "./key-order.js";
 export {
-  normalizeTags,
+  normalizeArrayFields,
   sortKeysBySchema,
   removeUnknownKeys,
   populateMissingFields,
