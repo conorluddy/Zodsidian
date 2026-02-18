@@ -57,4 +57,23 @@ Body after empty frontmatter`;
     const result = parseFrontmatter(content);
     expect(result.body).toBe(body);
   });
+
+  it("normalizes YAML 1.1 Date objects to YYYY-MM-DD strings", () => {
+    // gray-matter (YAML 1.1) parses unquoted dates as Date objects.
+    // Obsidian writes dates without quotes, so we must coerce them on read.
+    const content = `---
+type: project
+id: proj-1
+title: Test
+status: active
+created: 2026-02-16
+updated: 2026-02-18
+---`;
+    const result = parseFrontmatter(content);
+    expect(result.isValid).toBe(true);
+    const data = result.data as Record<string, unknown>;
+    expect(data["created"]).toBe("2026-02-16");
+    expect(data["updated"]).toBe("2026-02-18");
+    expect(typeof data["created"]).toBe("string");
+  });
 });

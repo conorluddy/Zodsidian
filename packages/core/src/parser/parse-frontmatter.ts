@@ -2,6 +2,29 @@ import matter from "gray-matter";
 import type { FrontmatterResult } from "../types/index.js";
 import { IssueCode } from "../types/index.js";
 
+/**
+ * gray-matter uses YAML 1.1, which parses unquoted YYYY-MM-DD values as Date objects.
+ * This walks parsed frontmatter data and converts any Date instances to YYYY-MM-DD strings
+ * so they pass Zod's z.string().date() validation downstream.
+ */
+function normalizeDates(value: unknown): unknown {
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+  if (Array.isArray(value)) {
+    return value.map(normalizeDates);
+  }
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [
+        k,
+        normalizeDates(v),
+      ]),
+    );
+  }
+  return value;
+}
+
 export function parseFrontmatter(content: string): FrontmatterResult {
   const fmRegex = /^---\r?\n/;
   if (!fmRegex.test(content)) {
@@ -31,7 +54,9 @@ export function parseFrontmatter(content: string): FrontmatterResult {
     const body = content.slice(spanText.length);
 
     return {
-      data: result.data as Record<string, unknown>,
+      // gray-matter (YAML 1.1) parses unquoted YYYY-MM-DD as Date objects.
+      // Normalize them to ISO date strings so Zod's z.string().date() accepts them.
+      data: normalizeDates(result.data) as Record<string, unknown>,
       span: {
         startLine: 0,
         endLine,
