@@ -1,6 +1,6 @@
 import { Plugin, Notice, TFile } from "obsidian";
 import type { ValidationIssue } from "@zodsidian/core";
-import { getRegisteredTypes } from "@zodsidian/core";
+import { applyFixes, getRegisteredTypes } from "@zodsidian/core";
 import { DEFAULT_SETTINGS, type ZodsidianSettings } from "./settings/settings.js";
 import { ZodsidianSettingTab } from "./settings/settings-tab.js";
 import { VaultAdapter } from "./services/vault-adapter.js";
@@ -44,9 +44,11 @@ export default class ZodsidianPlugin extends Plugin {
     this.registerView(
       VALIDATION_VIEW_TYPE,
       (leaf) =>
-        new ValidationView(leaf, (filePath, type) => {
-          this.convertFile(filePath, type);
-        }),
+        new ValidationView(
+          leaf,
+          (filePath, type) => this.convertFile(filePath, type),
+          (filePath) => this.fixFile(filePath),
+        ),
     );
     this.registerView(REPORT_VIEW_TYPE, (leaf) => {
       return new ReportView(leaf, (unknownType) => {
@@ -61,6 +63,35 @@ export default class ZodsidianPlugin extends Plugin {
 
     this.addRibbonIcon("shield-check", "Open Zodsidian validation panel", () => {
       revealValidationPanel(this);
+    });
+
+    this.addRibbonIcon("wrench", "Fix vault (safe fixes)", async () => {
+      const files = this.vaultAdapter.getMarkdownFiles();
+      const config = this.configService.getConfig();
+      let fixedCount = 0;
+
+      for (const file of files) {
+        const content = await this.vaultAdapter.readFile(file);
+        const result = applyFixes(content, { config });
+        if (result.changed) {
+          await this.vaultAdapter.writeFile(file, result.content);
+          fixedCount++;
+        }
+      }
+
+      new Notice(fixedCount > 0 ? `Fixed ${fixedCount} file(s).` : "Nothing to fix.");
+
+      // Re-validate the active file so the panel and status bar update
+      const activeFile = this.app.workspace.getActiveFile();
+      if (activeFile?.path.endsWith(".md")) {
+        const validation = await this.validationService.validateFile(activeFile);
+        const errors = validation.issues.filter((i) => i.severity === "error").length;
+        const warnings = validation.issues.filter((i) => i.severity === "warning").length;
+        validation.isTyped
+          ? this.statusBar.update(errors, warnings)
+          : this.statusBar.clear();
+        this.updateView(activeFile.path, validation.issues, validation.isTyped);
+      }
     });
 
     this.reportRibbonEl = this.addRibbonIcon(
@@ -182,6 +213,34 @@ export default class ZodsidianPlugin extends Plugin {
       new Notice(
         `Conversion failed: ${err instanceof Error ? err.message : String(err)}`,
       );
+    }
+  }
+
+  async fixFile(filePath: string): Promise<void> {
+    const file = this.app.vault.getFileByPath(filePath);
+    if (!file) return;
+    try {
+      const content = await this.vaultAdapter.readFile(file);
+      const result = applyFixes(content, { config: this.configService.getConfig() });
+
+      if (!result.changed) {
+        new Notice("Nothing to fix.");
+        return;
+      }
+
+      await this.vaultAdapter.writeFile(file, result.content);
+      new Notice("Fixed.");
+
+      // Re-validate immediately so the panel and status bar update
+      const validation = await this.validationService.validateFile(file);
+      const errors = validation.issues.filter((i) => i.severity === "error").length;
+      const warnings = validation.issues.filter((i) => i.severity === "warning").length;
+      validation.isTyped
+        ? this.statusBar.update(errors, warnings)
+        : this.statusBar.clear();
+      this.updateView(filePath, validation.issues, validation.isTyped);
+    } catch (err) {
+      new Notice(`Fix failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
