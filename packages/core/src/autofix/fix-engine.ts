@@ -12,6 +12,8 @@ import { stringifyFrontmatter } from "./yaml-util.js";
 
 export interface FixOptions {
   unsafe?: boolean;
+  /** Strategies applied before the built-in normalize/sort pass. */
+  preStrategies?: FixStrategy[];
   extraStrategies?: FixStrategy[];
   config?: ZodsidianConfig;
 }
@@ -28,7 +30,11 @@ export function applyFixes(fileContent: string, options: FixOptions = {}): FixRe
   }
 
   let data = parsed.data as Record<string, unknown>;
-  const strategies: FixStrategy[] = [normalizeArrayFields, sortKeysBySchema];
+  const strategies: FixStrategy[] = [
+    ...(options.preStrategies ?? []),
+    normalizeArrayFields,
+    sortKeysBySchema,
+  ];
 
   if (options.unsafe) {
     const userType = typeof data.type === "string" ? data.type : undefined;

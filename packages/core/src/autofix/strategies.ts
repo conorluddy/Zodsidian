@@ -43,6 +43,23 @@ export const removeUnknownKeys = (allowedKeys: Set<string>): FixStrategy => {
   };
 };
 
+/**
+ * Renames frontmatter keys in bulk. Only renames if the old key exists and
+ * the new key does not — never overwrites existing data.
+ */
+export const renameFields = (renames: Record<string, string>): FixStrategy => {
+  return (data) => {
+    const result = { ...data };
+    for (const [oldKey, newKey] of Object.entries(renames)) {
+      if (oldKey in result && !(newKey in result)) {
+        result[newKey] = result[oldKey];
+        delete result[oldKey];
+      }
+    }
+    return result;
+  };
+};
+
 export const populateMissingFields: FixStrategy = (data) => {
   const typeName = typeof data.type === "string" ? data.type : undefined;
   const entry = typeName ? getSchemaEntry(typeName) : undefined;

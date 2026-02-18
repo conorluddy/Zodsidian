@@ -4,6 +4,7 @@ import {
   loadSchemas,
   applyFixes,
   populateMissingFields,
+  renameFields,
   type FixStrategy,
 } from "@zodsidian/core";
 import { walkMarkdownFiles, filterByType } from "../utils/walk.js";
@@ -16,6 +17,7 @@ interface FixCommandOptions {
   unsafe?: boolean;
   dryRun?: boolean;
   populate?: boolean;
+  renameField?: string[];
   config?: string;
 }
 
@@ -28,9 +30,24 @@ export async function fixCommand(dir: string, options: FixCommandOptions): Promi
       files = filterByType(files, options.type);
     }
 
+    const preStrategies: FixStrategy[] = [];
     const extraStrategies: FixStrategy[] = [];
     if (options.populate) {
       extraStrategies.push(populateMissingFields);
+    }
+    if (options.renameField && options.renameField.length > 0) {
+      const renames: Record<string, string> = {};
+      for (const pair of options.renameField) {
+        const eq = pair.indexOf("=");
+        if (eq === -1) {
+          console.error(`Invalid --rename-field format "${pair}" — expected old=new`);
+          process.exit(EXIT_RUNTIME_ERROR);
+        }
+        renames[pair.slice(0, eq)] = pair.slice(eq + 1);
+      }
+      // renameFields runs before normalizeArrayFields so the renamed field
+      // (e.g. project→projects) is coerced to an array in the same pass
+      preStrategies.push(renameFields(renames));
     }
 
     let fixedCount = 0;
@@ -38,6 +55,7 @@ export async function fixCommand(dir: string, options: FixCommandOptions): Promi
     for (const { filePath, content } of files) {
       const result = applyFixes(content, {
         unsafe: options.unsafe,
+        preStrategies: preStrategies.length > 0 ? preStrategies : undefined,
         extraStrategies: extraStrategies.length > 0 ? extraStrategies : undefined,
         config,
       });
