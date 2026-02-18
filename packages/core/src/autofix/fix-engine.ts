@@ -3,7 +3,7 @@ import { getSchemaEntry } from "../schema/index.js";
 import { resolveType } from "../config/index.js";
 import type { ZodsidianConfig } from "../config/index.js";
 import {
-  normalizeTags,
+  normalizeArrayFields,
   sortKeysBySchema,
   removeUnknownKeys,
   type FixStrategy,
@@ -28,7 +28,7 @@ export function applyFixes(fileContent: string, options: FixOptions = {}): FixRe
   }
 
   let data = parsed.data as Record<string, unknown>;
-  const strategies: FixStrategy[] = [normalizeTags, sortKeysBySchema];
+  const strategies: FixStrategy[] = [normalizeArrayFields, sortKeysBySchema];
 
   if (options.unsafe) {
     const userType = typeof data.type === "string" ? data.type : undefined;

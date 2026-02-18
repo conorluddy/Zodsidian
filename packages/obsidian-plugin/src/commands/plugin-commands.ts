@@ -1,6 +1,6 @@
 import { Notice } from "obsidian";
 import type ZodsidianPlugin from "../main.js";
-import { applyFixes, type ValidationIssue } from "@zodsidian/core";
+import { applyFixes, getRegisteredTypes, type ValidationIssue } from "@zodsidian/core";
 import { VALIDATION_VIEW_TYPE, ValidationView } from "../ui/validation-view.js";
 import { REPORT_VIEW_TYPE, ReportView } from "../ui/report-view.js";
 
@@ -67,6 +67,18 @@ export function registerCommands(plugin: ZodsidianPlugin): void {
       new Notice("Zodsidian: File fixed.");
     },
   });
+
+  // One command per registered schema type — dynamically driven by registry
+  for (const type of getRegisteredTypes()) {
+    plugin.addCommand({
+      id: `convert-to-${type}`,
+      name: `Convert current file to ${type}`,
+      editorCallback: (_editor, ctx) => {
+        if (!ctx.file) return;
+        plugin.convertFile(ctx.file.path, type);
+      },
+    });
+  }
 
   plugin.addCommand({
     id: "open-validation-panel",

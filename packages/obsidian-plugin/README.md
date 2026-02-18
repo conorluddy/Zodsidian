@@ -94,6 +94,14 @@ This ensures:
 - "Validate vault" — Manual validation trigger
 - "Validate current file" — Validate active file only
 
+✅ **Ingestion — add existing notes to the graph**
+
+- Validation panel shows type buttons when a file isn't in the graph
+- Right-click any `.md` file → "Add to Zodsidian as project / decision / idea"
+- Command palette: "Convert current file to project / decision / idea"
+- Merge strategy: schema defaults fill gaps, existing frontmatter fields are preserved, `type` is stamped
+- Markdown body is never modified
+
 ### Planned
 
 🚧 **Autofix buttons**
@@ -255,21 +263,24 @@ interface ZodsidianSettings {
 
 #### Built commands
 
-| Command                 | Description                 |
-| ----------------------- | --------------------------- |
-| `validate-vault`        | Validate all files in vault |
-| `validate-current-file` | Validate active file only   |
+| Command                 | Description                         |
+| ----------------------- | ----------------------------------- |
+| `validate-vault`        | Validate all files in vault         |
+| `validate-current-file` | Validate active file only           |
+| `fix-current-file`      | Apply safe autofixes to active file |
+| `convert-to-project`    | Convert current file to a project   |
+| `convert-to-decision`   | Convert current file to a decision  |
+| `convert-to-idea`       | Convert current file to an idea     |
 
 #### Planned commands
 
-| Command                | Description                           |
-| ---------------------- | ------------------------------------- |
-| `autofix-vault`        | Run autofix on all files              |
-| `autofix-current-file` | Run autofix on active file            |
-| `new-project`          | Scaffold a new project                |
-| `new-decision`         | Scaffold a new decision               |
-| `new-idea`             | Scaffold a new idea                   |
-| `show-references`      | Show reference graph for current file |
+| Command           | Description                           |
+| ----------------- | ------------------------------------- |
+| `autofix-vault`   | Run autofix on all files              |
+| `new-project`     | Scaffold a brand-new project          |
+| `new-decision`    | Scaffold a brand-new decision         |
+| `new-idea`        | Scaffold a brand-new idea             |
+| `show-references` | Show reference graph for current file |
 
 ---
 
@@ -436,18 +447,25 @@ class ValidationService {
 
 ## Roadmap
 
-**v0.1 (current):**
+**v0.1:**
 
 - ✅ Live validation service
 - ✅ Status bar indicator
 - ✅ Settings tab
 - ✅ Basic commands
 
-**v0.2 (next):**
+**v0.2 (current):**
+
+- ✅ Ingestion UI — convert existing notes into typed graph documents
+  - Validation panel type buttons for untyped files
+  - File explorer context menu ("Add to Zodsidian as...")
+  - Command palette convert commands
+
+**v0.3 (next):**
 
 - Autofix buttons (ribbon + context menu)
 - Autofix preview modal
-- Validation view (clickable issue list)
+- Validation view polish (clickable issue list, grouped by severity)
 
 **v0.3:**
 
