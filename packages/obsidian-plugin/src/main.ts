@@ -120,8 +120,9 @@ export default class ZodsidianPlugin extends Plugin {
     // File explorer context menu — "Add to Zodsidian as..."
     this.registerEvent(
       this.app.workspace.on("file-menu", (menu, abstractFile) => {
-        if (!(abstractFile instanceof TFile) || !abstractFile.path.endsWith(".md"))
+        if (!(abstractFile instanceof TFile) || !abstractFile.path.endsWith(".md")) {
           return;
+        }
         const types = getRegisteredTypes();
         if (types.length === 0) return;
 

@@ -65,6 +65,7 @@ export class ValidationView extends ItemView {
       });
 
       if (this.onConvert && this.state.filePath) {
+        const filePath = this.state.filePath;
         const types = getRegisteredTypes();
         const convertBar = panel.createDiv({ cls: "zodsidian-convert" });
         convertBar.createDiv({
@@ -77,9 +78,7 @@ export class ValidationView extends ItemView {
             text: type,
             cls: "zodsidian-convert-btn",
           });
-          btn.addEventListener("click", () =>
-            this.onConvert!(this.state.filePath!, type),
-          );
+          btn.addEventListener("click", () => this.onConvert!(filePath, type));
         }
       }
       return;

@@ -2,7 +2,6 @@ import type { TFile } from "obsidian";
 import {
   extractSchemaDefaults,
   getSchemaEntry,
-  loadSchemas,
   parseFrontmatter,
   stringifyFrontmatter,
 } from "@zodsidian/core";
@@ -17,9 +16,7 @@ import type { VaultAdapter } from "./vault-adapter.js";
  * The markdown body is never modified.
  */
 export class IngestService {
-  constructor(private vaultAdapter: VaultAdapter) {
-    loadSchemas();
-  }
+  constructor(private vaultAdapter: VaultAdapter) {}
 
   async convertFile(file: TFile, targetType: string): Promise<void> {
     const entry = getSchemaEntry(targetType);

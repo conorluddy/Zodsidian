@@ -60,6 +60,7 @@ Zodsidian/
 │   ├── project.schema.ts               # Project schema definition
 │   ├── decision.schema.ts              # Decision schema definition
 │   ├── idea.schema.ts                  # Idea schema definition
+│   ├── plan.schema.ts                  # Plan schema definition
 │   ├── index.ts                        # Package exports
 │   └── README.md                       # Schema conventions, adding types
 │
@@ -127,6 +128,7 @@ Zodsidian/
 │   └── obsidian-plugin/                # @zodsidian/obsidian-plugin — Obsidian UI
 │       ├── src/
 │       │   ├── services/               # Background services
+│       │   │   └── ingest-service.ts   # Converts plain notes to typed graph documents
 │       │   ├── ui/                     # Obsidian UI components
 │       │   ├── settings/               # Settings tab
 │       │   ├── commands/               # Command palette commands
