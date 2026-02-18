@@ -22,5 +22,6 @@ export function loadSchemas(): void {
   registerSchema("plan", planSchema, {
     idField: "id",
     referenceFields: ["projects"],
+    keyOrder: ["type", "id", "title", "status", "projects", "tags", "created", "updated"],
   });
 }

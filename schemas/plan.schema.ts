@@ -8,7 +8,8 @@ export const planSchema = z
     title: z.string().min(1).describe("Human-readable plan title"),
     status: z
       .enum(["draft", "approved", "done"])
-      .describe("Current plan lifecycle state"),
+      .default("draft")
+      .describe("Plan lifecycle: draft → approved → done"),
     ...baseFields,
   })
   .strict()
