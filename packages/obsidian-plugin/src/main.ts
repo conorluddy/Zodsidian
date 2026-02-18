@@ -1,11 +1,13 @@
-import { Plugin, Notice } from "obsidian";
+import { Plugin, Notice, TFile } from "obsidian";
 import type { ValidationIssue } from "@zodsidian/core";
+import { getRegisteredTypes } from "@zodsidian/core";
 import { DEFAULT_SETTINGS, type ZodsidianSettings } from "./settings/settings.js";
 import { ZodsidianSettingTab } from "./settings/settings-tab.js";
 import { VaultAdapter } from "./services/vault-adapter.js";
 import { ConfigService } from "./services/config-service.js";
 import { ValidationService } from "./services/validation-service.js";
 import { ReportService } from "./services/report-service.js";
+import { IngestService } from "./services/ingest-service.js";
 import { StatusBarManager } from "./ui/status-bar.js";
 import { VALIDATION_VIEW_TYPE, ValidationView } from "./ui/validation-view.js";
 import { REPORT_VIEW_TYPE, ReportView } from "./ui/report-view.js";
@@ -22,6 +24,7 @@ export default class ZodsidianPlugin extends Plugin {
   configService!: ConfigService;
   validationService!: ValidationService;
   reportService!: ReportService;
+  ingestService!: IngestService;
   private statusBar!: StatusBarManager;
   private reportRibbonEl?: HTMLElement;
   private unknownTypeCount = 0;
@@ -35,9 +38,16 @@ export default class ZodsidianPlugin extends Plugin {
     this.configService.startWatching(this.settings);
     this.validationService = new ValidationService(this.vaultAdapter, this.configService);
     this.reportService = new ReportService(this.vaultAdapter, this.configService);
+    this.ingestService = new IngestService(this.vaultAdapter);
     this.statusBar = new StatusBarManager(this);
 
-    this.registerView(VALIDATION_VIEW_TYPE, (leaf) => new ValidationView(leaf));
+    this.registerView(
+      VALIDATION_VIEW_TYPE,
+      (leaf) =>
+        new ValidationView(leaf, (filePath, type) => {
+          this.convertFile(filePath, type);
+        }),
+    );
     this.registerView(REPORT_VIEW_TYPE, (leaf) => {
       return new ReportView(leaf, (unknownType) => {
         new TypeMappingModal(this.app, unknownType, this.configService, () => {
@@ -107,6 +117,26 @@ export default class ZodsidianPlugin extends Plugin {
       }),
     );
 
+    // File explorer context menu — "Add to Zodsidian as..."
+    this.registerEvent(
+      this.app.workspace.on("file-menu", (menu, abstractFile) => {
+        if (!(abstractFile instanceof TFile) || !abstractFile.path.endsWith(".md"))
+          return;
+        const types = getRegisteredTypes();
+        if (types.length === 0) return;
+
+        menu.addSeparator();
+        for (const type of types) {
+          menu.addItem((item) =>
+            item
+              .setTitle(`Add to Zodsidian as ${type}`)
+              .setIcon("file-plus")
+              .onClick(() => this.convertFile(abstractFile.path, type)),
+          );
+        }
+      }),
+    );
+
     // If panel is already open (persisted by Obsidian), validate active file into it
     this.app.workspace.onLayoutReady(() => {
       const activeFile = this.app.workspace.getActiveFile();
@@ -133,6 +163,25 @@ export default class ZodsidianPlugin extends Plugin {
 
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
+  }
+
+  async convertFile(filePath: string, type: string): Promise<void> {
+    const file = this.app.vault.getFileByPath(filePath);
+    if (!file) return;
+    try {
+      await this.ingestService.convertFile(file, type);
+      new Notice(`Added to graph as ${type}`);
+      // Re-validate so the panel updates immediately (validateFile always re-reads)
+      const result = await this.validationService.validateFile(file);
+      const errors = result.issues.filter((i) => i.severity === "error").length;
+      const warnings = result.issues.filter((i) => i.severity === "warning").length;
+      this.statusBar.update(errors, warnings);
+      this.updateView(filePath, result.issues, result.isTyped);
+    } catch (err) {
+      new Notice(
+        `Conversion failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
   private getValidationView(): ValidationView | null {

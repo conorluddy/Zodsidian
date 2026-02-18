@@ -1,5 +1,6 @@
 import { ItemView, WorkspaceLeaf, setIcon } from "obsidian";
 import type { ValidationIssue } from "@zodsidian/core";
+import { getRegisteredTypes } from "@zodsidian/core";
 
 export const VALIDATION_VIEW_TYPE = "zodsidian-validation";
 
@@ -12,7 +13,10 @@ interface ViewState {
 export class ValidationView extends ItemView {
   private state: ViewState = { filePath: null, issues: [], isTyped: false };
 
-  constructor(leaf: WorkspaceLeaf) {
+  constructor(
+    leaf: WorkspaceLeaf,
+    private onConvert?: (filePath: string, type: string) => void,
+  ) {
     super(leaf);
   }
 
@@ -56,9 +60,28 @@ export class ValidationView extends ItemView {
 
     if (!this.state.isTyped) {
       panel.createDiv({
-        cls: "zodsidian-empty",
-        text: "No schema registered for this file type.",
+        cls: "zodsidian-untyped-label",
+        text: "Not in the Zodsidian graph.",
       });
+
+      if (this.onConvert && this.state.filePath) {
+        const types = getRegisteredTypes();
+        const convertBar = panel.createDiv({ cls: "zodsidian-convert" });
+        convertBar.createDiv({
+          cls: "zodsidian-convert-label",
+          text: "Add to graph as:",
+        });
+        const btns = convertBar.createDiv({ cls: "zodsidian-convert-buttons" });
+        for (const type of types) {
+          const btn = btns.createEl("button", {
+            text: type,
+            cls: "zodsidian-convert-btn",
+          });
+          btn.addEventListener("click", () =>
+            this.onConvert!(this.state.filePath!, type),
+          );
+        }
+      }
       return;
     }
 
