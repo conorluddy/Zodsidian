@@ -170,6 +170,8 @@ export default class ZodsidianPlugin extends Plugin {
     if (!file) return;
     try {
       await this.ingestService.convertFile(file, type);
+      // Auto-fix: infer id/title from filename, populate remaining required fields
+      await this.fixFile(filePath, { populate: true, silent: true });
       new Notice(`Added to graph as ${type}`);
       // Re-validate so the panel updates immediately (validateFile always re-reads)
       const result = await this.validationService.validateFile(file);
@@ -186,7 +188,7 @@ export default class ZodsidianPlugin extends Plugin {
 
   async fixFile(
     filePath: string,
-    opts?: { unsafe?: boolean; populate?: boolean },
+    opts?: { unsafe?: boolean; populate?: boolean; silent?: boolean },
   ): Promise<void> {
     const file = this.app.vault.getFileByPath(filePath);
     if (!file) return;
@@ -207,12 +209,12 @@ export default class ZodsidianPlugin extends Plugin {
       });
 
       if (!result.changed) {
-        new Notice("Nothing to fix.");
+        if (!opts?.silent) new Notice("Nothing to fix.");
         return;
       }
 
       await this.vaultAdapter.writeFile(file, result.content);
-      new Notice("Fixed.");
+      if (!opts?.silent) new Notice("Fixed.");
 
       // Re-validate immediately so the panel and status bar update
       const validation = await this.validationService.validateFile(file);
