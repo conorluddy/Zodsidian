@@ -1,5 +1,5 @@
 import { ItemView, WorkspaceLeaf, setIcon } from "obsidian";
-import type { ValidationIssue } from "@zodsidian/core";
+import { IssueCode, type ValidationIssue } from "@zodsidian/core";
 import { getRegisteredTypes } from "@zodsidian/core";
 import type { VaultReport } from "../services/report-service.js";
 
@@ -20,7 +20,10 @@ export class ZodsidianView extends ItemView {
   constructor(
     leaf: WorkspaceLeaf,
     private onConvert: (filePath: string, type: string) => void,
-    private onFix: (filePath: string) => void,
+    private onFix: (
+      filePath: string,
+      opts?: { unsafe?: boolean; populate?: boolean },
+    ) => void,
     private onFixVault: () => Promise<void>,
     private onMapType: (unknownType: string) => void,
     private onOpened: () => void,
@@ -126,11 +129,15 @@ export class ZodsidianView extends ItemView {
     fixBtn.addEventListener("click", () => this.onFix(filePath));
 
     for (const issue of [...errors, ...warnings]) {
-      this.renderIssue(panel, issue);
+      this.renderIssue(panel, issue, filePath);
     }
   }
 
-  private renderIssue(parent: HTMLElement, issue: ValidationIssue): void {
+  private renderIssue(
+    parent: HTMLElement,
+    issue: ValidationIssue,
+    filePath: string,
+  ): void {
     const row = parent.createDiv({ cls: `zodsidian-issue zodsidian-${issue.severity}` });
 
     const icon = row.createSpan({ cls: "zodsidian-severity-icon" });
@@ -147,6 +154,19 @@ export class ZodsidianView extends ItemView {
 
     if (issue.suggestion) {
       body.createDiv({ cls: "zodsidian-issue-suggestion", text: issue.suggestion });
+    }
+
+    const fixAction = getFixAction(issue);
+    if (fixAction) {
+      body.createDiv({ cls: "zodsidian-issue-fix-hint", text: fixAction.helpText });
+
+      const fixBtn = row.createEl("button", { cls: "zodsidian-issue-fix-btn" });
+      setIcon(fixBtn, "wrench");
+      fixBtn.title = fixAction.helpText;
+      fixBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.onFix(filePath, { unsafe: fixAction.unsafe, populate: fixAction.populate });
+      });
     }
   }
 
@@ -268,6 +288,10 @@ export class ZodsidianView extends ItemView {
     }
   }
 
+  // ========================================
+  // HELPERS
+  // ========================================
+
   private renderActiveMappings(parent: HTMLElement): void {
     const mappings = this.report!.activeMappings;
     const entries = Object.entries(mappings);
@@ -283,5 +307,39 @@ export class ZodsidianView extends ItemView {
       item.createSpan({ text: " → " });
       item.createSpan({ text: to, cls: "zodsidian-mapping-to" });
     }
+  }
+}
+
+// ========================================
+// PER-ISSUE FIX ACTIONS
+// ========================================
+
+interface FixAction {
+  /** Short description shown below the fix button and as its tooltip. */
+  helpText: string;
+  unsafe?: boolean;
+  populate?: boolean;
+}
+
+/**
+ * Maps a ValidationIssue to an auto-fix action, or returns null when the
+ * issue cannot be resolved automatically.
+ */
+function getFixAction(issue: ValidationIssue): FixAction | null {
+  switch (issue.code) {
+    case IssueCode.FM_UNKNOWN_KEY:
+      return {
+        helpText: issue.suggestion ?? "Remove unknown key from frontmatter",
+        unsafe: true,
+      };
+    case IssueCode.FM_TAGS_NOT_ARRAY:
+      return { helpText: "Convert tags to a YAML list" };
+    case IssueCode.FM_SCHEMA_INVALID:
+      if (issue.path?.includes("id")) {
+        return { helpText: "Infer id from title or filename", populate: true };
+      }
+      return null;
+    default:
+      return null;
   }
 }

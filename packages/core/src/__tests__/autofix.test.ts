@@ -5,6 +5,7 @@ import {
   populateMissingFields,
   renameFields,
   inferIdFromTitle,
+  inferIdFromPath,
 } from "../autofix/index.js";
 import { parseFrontmatter } from "../parser/index.js";
 import { loadSchemas, clearRegistry } from "../schema/index.js";
@@ -241,6 +242,47 @@ describe("inferIdFromTitle", () => {
     const parsed = parseFrontmatter(result.content);
     const data = parsed.data as Record<string, unknown>;
     expect(data.id).toBe("plan-my-plan");
+  });
+});
+
+describe("inferIdFromPath", () => {
+  beforeEach(() => {
+    clearRegistry();
+    loadSchemas();
+  });
+
+  it("infers id from filename when id is missing", () => {
+    const data = { type: "project", title: "", status: "active" };
+    const result = inferIdFromPath("/vault/IOS Apps/Grapla/Grapla.md")(data);
+    expect(result.id).toBe("project-grapla");
+  });
+
+  it("infers id from filename when id is empty string", () => {
+    const data = { type: "project", id: "", title: "", status: "active" };
+    const result = inferIdFromPath("/vault/IOS Apps/Grapla/Grapla.md")(data);
+    expect(result.id).toBe("project-grapla");
+  });
+
+  it("slugifies the filename", () => {
+    const data = { type: "plan", status: "draft" };
+    const result = inferIdFromPath("/Plans/My Great Plan 2026.md")(data);
+    expect(result.id).toBe("plan-my-great-plan-2026");
+  });
+
+  it("does not overwrite an id set by inferIdFromTitle", () => {
+    const data = { type: "plan", title: "Real Title", status: "draft" };
+    const afterTitle = inferIdFromTitle(data);
+    expect(afterTitle.id).toBe("plan-real-title");
+    const afterPath = inferIdFromPath("/Plans/random-filename.md")(afterTitle);
+    expect(afterPath.id).toBe("plan-real-title"); // title wins
+  });
+
+  it("falls back to filename when title is empty", () => {
+    const data = { type: "project", id: "", title: "", status: "active" };
+    const afterTitle = inferIdFromTitle(data); // no-op: title empty
+    expect(afterTitle.id).toBe("");
+    const afterPath = inferIdFromPath("/IOS Apps/Grapla/Grapla.md")(afterTitle);
+    expect(afterPath.id).toBe("project-grapla");
   });
 });
 

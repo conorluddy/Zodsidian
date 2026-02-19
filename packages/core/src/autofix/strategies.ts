@@ -92,6 +92,37 @@ export const inferIdFromTitle: FixStrategy = (data) => {
   return { ...data, [idField]: `${typeName}-${slugify(title)}` };
 };
 
+/**
+ * Infers the id field from `${type}-${slug(filename)}` when the id field is
+ * still missing or empty after `inferIdFromTitle` has run. Accepts the file's
+ * full path and strips the directory + extension to get the bare filename slug.
+ *
+ * Usage: `inferIdFromPath("/path/to/Grapla.md")` → strategy that sets `id`
+ * to `"project-grapla"` when `type: project` and id is blank.
+ */
+export function inferIdFromPath(filePath: string): FixStrategy {
+  return (data) => {
+    const typeName = typeof data.type === "string" ? data.type : undefined;
+    const entry = typeName ? getSchemaEntry(typeName) : undefined;
+    if (!entry) return data;
+
+    const idField = entry.idField ?? "id";
+    const currentId = data[idField];
+
+    // Only run if id is still missing or empty (inferIdFromTitle already set it otherwise)
+    if (typeof currentId === "string" && currentId.length > 0) return data;
+
+    const filename =
+      filePath
+        .split("/")
+        .pop()
+        ?.replace(/\.[^.]+$/, "") ?? "";
+    if (!filename) return data;
+
+    return { ...data, [idField]: `${typeName}-${slugify(filename)}` };
+  };
+}
+
 function slugify(str: string): string {
   return str
     .toLowerCase()

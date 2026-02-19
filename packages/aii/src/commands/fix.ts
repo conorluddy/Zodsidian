@@ -4,6 +4,7 @@ import {
   applyFixes,
   populateMissingFields,
   inferIdFromTitle,
+  inferIdFromPath,
   renameFields,
   type FixStrategy,
 } from "@zodsidian/core";
@@ -31,11 +32,6 @@ export async function fixCommand(dir: string, options: FixCommandOptions): Promi
     }
 
     const preStrategies: FixStrategy[] = [];
-    const extraStrategies: FixStrategy[] = [];
-    if (options.populate) {
-      extraStrategies.push(inferIdFromTitle);
-      extraStrategies.push(populateMissingFields);
-    }
     if (options.renameField && options.renameField.length > 0) {
       const renames: Record<string, string> = {};
       for (const pair of options.renameField) {
@@ -57,6 +53,11 @@ export async function fixCommand(dir: string, options: FixCommandOptions): Promi
     const unchanged: Array<{ filePath: string }> = [];
 
     for (const { filePath, content } of files) {
+      // populate strategies are per-file so inferIdFromPath can capture the path
+      const extraStrategies: FixStrategy[] = options.populate
+        ? [inferIdFromTitle, inferIdFromPath(filePath), populateMissingFields]
+        : [];
+
       const result = applyFixes(content, {
         unsafe: options.unsafe,
         preStrategies: preStrategies.length > 0 ? preStrategies : undefined,
