@@ -5,6 +5,7 @@ import {
   populateMissingFields,
   inferIdFromTitle,
   inferIdFromPath,
+  inferTitleFromPath,
   renameFields,
   type FixStrategy,
 } from "@zodsidian/core";
@@ -55,7 +56,12 @@ export async function fixCommand(dir: string, options: FixCommandOptions): Promi
     for (const { filePath, content } of files) {
       // populate strategies are per-file so inferIdFromPath can capture the path
       const extraStrategies: FixStrategy[] = options.populate
-        ? [inferIdFromTitle, inferIdFromPath(filePath), populateMissingFields]
+        ? [
+            inferIdFromTitle,
+            inferIdFromPath(filePath),
+            inferTitleFromPath(filePath),
+            populateMissingFields,
+          ]
         : [];
 
       const result = applyFixes(content, {

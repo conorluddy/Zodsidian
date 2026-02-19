@@ -7,6 +7,7 @@ export {
   populateMissingFields,
   inferIdFromTitle,
   inferIdFromPath,
+  inferTitleFromPath,
   renameFields,
   type FixStrategy,
 } from "./strategies.js";

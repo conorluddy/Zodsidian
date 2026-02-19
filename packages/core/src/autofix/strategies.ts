@@ -123,9 +123,42 @@ export function inferIdFromPath(filePath: string): FixStrategy {
   };
 }
 
+/**
+ * Infers the title field from the filename when title is missing or empty.
+ * Strips the extension, replaces hyphens/underscores with spaces, and
+ * applies sentence case (capitalise first character, lowercase the rest).
+ *
+ * Usage: `inferTitleFromPath("/vault/Grapla/Grapla.md")` → sets `title`
+ * to `"Grapla"` when title is blank.
+ */
+export function inferTitleFromPath(filePath: string): FixStrategy {
+  return (data) => {
+    const typeName = typeof data.type === "string" ? data.type : undefined;
+    const entry = typeName ? getSchemaEntry(typeName) : undefined;
+    if (!entry || !("title" in entry.schema.shape)) return data;
+
+    const currentTitle = data.title;
+    if (typeof currentTitle === "string" && currentTitle.length > 0) return data;
+
+    const stem =
+      filePath
+        .split("/")
+        .pop()
+        ?.replace(/\.[^.]+$/, "") ?? "";
+    if (!stem) return data;
+
+    const title = toSentenceCase(stem.replace(/[-_]+/g, " "));
+    return { ...data, title };
+  };
+}
+
 function slugify(str: string): string {
   return str
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function toSentenceCase(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }

@@ -5,6 +5,7 @@ import {
   getRegisteredTypes,
   inferIdFromTitle,
   inferIdFromPath,
+  inferTitleFromPath,
   populateMissingFields,
   type FixStrategy,
 } from "@zodsidian/core";
@@ -190,7 +191,12 @@ export default class ZodsidianPlugin extends Plugin {
     try {
       const content = await this.vaultAdapter.readFile(file);
       const extraStrategies: FixStrategy[] = opts?.populate
-        ? [inferIdFromTitle, inferIdFromPath(filePath), populateMissingFields]
+        ? [
+            inferIdFromTitle,
+            inferIdFromPath(filePath),
+            inferTitleFromPath(filePath),
+            populateMissingFields,
+          ]
         : [];
       const result = applyFixes(content, {
         config: this.configService.getConfig(),

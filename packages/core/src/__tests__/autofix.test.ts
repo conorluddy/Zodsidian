@@ -6,6 +6,7 @@ import {
   renameFields,
   inferIdFromTitle,
   inferIdFromPath,
+  inferTitleFromPath,
 } from "../autofix/index.js";
 import { parseFrontmatter } from "../parser/index.js";
 import { loadSchemas, clearRegistry } from "../schema/index.js";
@@ -283,6 +284,45 @@ describe("inferIdFromPath", () => {
     expect(afterTitle.id).toBe("");
     const afterPath = inferIdFromPath("/IOS Apps/Grapla/Grapla.md")(afterTitle);
     expect(afterPath.id).toBe("project-grapla");
+  });
+});
+
+describe("inferTitleFromPath", () => {
+  beforeEach(() => {
+    clearRegistry();
+    loadSchemas();
+  });
+
+  it("infers title from filename in sentence case", () => {
+    const data = { type: "project", id: "", title: "", status: "active" };
+    const result = inferTitleFromPath("/vault/IOS Apps/Grapla/Grapla.md")(data);
+    expect(result.title).toBe("Grapla");
+  });
+
+  it("converts hyphens to spaces and applies sentence case", () => {
+    const data = { type: "plan", status: "draft" };
+    const result = inferTitleFromPath("/Plans/my-great-plan.md")(data);
+    expect(result.title).toBe("My great plan");
+  });
+
+  it("does not overwrite a non-empty title", () => {
+    const data = { type: "plan", title: "Keep This Title", status: "draft" };
+    const result = inferTitleFromPath("/Plans/random-filename.md")(data);
+    expect(result.title).toBe("Keep This Title");
+  });
+
+  it("skips if type is not registered", () => {
+    const data = { type: "unknown-type", title: "" };
+    const result = inferTitleFromPath("/vault/something.md")(data);
+    expect(result.title).toBe("");
+  });
+
+  it("works end-to-end: inferTitleFromPath then inferIdFromTitle", () => {
+    const data = { type: "project", id: "", title: "", status: "active" };
+    const afterTitle = inferTitleFromPath("/vault/Grapla/Grapla.md")(data);
+    expect(afterTitle.title).toBe("Grapla");
+    const afterId = inferIdFromTitle(afterTitle);
+    expect(afterId.id).toBe("project-grapla");
   });
 });
 

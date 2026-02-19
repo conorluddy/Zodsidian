@@ -338,6 +338,9 @@ function getFixAction(issue: ValidationIssue): FixAction | null {
       if (issue.path?.includes("id")) {
         return { helpText: "Infer id from title or filename", populate: true };
       }
+      if (issue.path?.includes("title")) {
+        return { helpText: "Set title from filename", populate: true };
+      }
       return null;
     default:
       return null;
