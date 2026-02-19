@@ -61,6 +61,7 @@ Zodsidian/
 │   ├── decision.schema.ts              # Decision schema definition
 │   ├── idea.schema.ts                  # Idea schema definition
 │   ├── plan.schema.ts                  # Plan schema definition
+│   ├── documentation.schema.ts         # Documentation schema definition
 │   ├── index.ts                        # Package exports
 │   └── README.md                       # Schema conventions, adding types
 │

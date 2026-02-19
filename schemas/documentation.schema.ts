@@ -8,10 +8,11 @@ export const documentationSchema = z
     title: z.string().min(1).describe("Human-readable document title"),
     status: z
       .enum(["draft", "review", "published", "deprecated"])
+      .default("draft")
       .describe("Authoring lifecycle: draft → review → published → deprecated"),
     ...baseFields,
   })
   .strict()
-  .describe("A documentation document — primary written output child of a project");
+  .describe("A documentation document — written output child of a project");
 
 export type Documentation = z.infer<typeof documentationSchema>;

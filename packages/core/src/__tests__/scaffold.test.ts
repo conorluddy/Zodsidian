@@ -78,6 +78,18 @@ describe("scaffold", () => {
     expect(issues).toHaveLength(0);
   });
 
+  it("scaffolded documentation with overrides validates without errors", () => {
+    const result = scaffold("documentation", {
+      overrides: { id: "doc-rt", title: "Getting Started" },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const parsed = parseFrontmatter(result.value.content);
+    const issues = validateFrontmatter(parsed.data as Record<string, unknown>);
+    expect(issues).toHaveLength(0);
+  });
+
   it("orders plan keys according to schema definition", () => {
     const result = scaffold("plan", {
       overrides: { id: "plan-ord", title: "Ordered Plan" },
