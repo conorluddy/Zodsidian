@@ -77,6 +77,26 @@ describe("validateFrontmatter", () => {
     expect(issues.some((i) => i.code === IssueCode.FM_SCHEMA_INVALID)).toBe(true);
   });
 
+  it("validates a correct documentation", () => {
+    const issues = validateFrontmatter({
+      type: "documentation",
+      id: "doc-1",
+      title: "Getting Started",
+      status: "published",
+    });
+    expect(issues).toHaveLength(0);
+  });
+
+  it("rejects documentation with invalid status", () => {
+    const issues = validateFrontmatter({
+      type: "documentation",
+      id: "doc-2",
+      title: "Bad Status",
+      status: "unpublished",
+    });
+    expect(issues.some((i) => i.code === IssueCode.FM_SCHEMA_INVALID)).toBe(true);
+  });
+
   it("validates a correct decision", () => {
     const issues = validateFrontmatter({
       type: "decision",
