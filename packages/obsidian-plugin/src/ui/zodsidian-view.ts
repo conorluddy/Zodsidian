@@ -2,6 +2,7 @@ import { ItemView, WorkspaceLeaf, setIcon } from "obsidian";
 import { IssueCode, type ValidationIssue } from "@zodsidian/core";
 import { getRegisteredTypes } from "@zodsidian/core";
 import type { VaultReport } from "../services/report-service.js";
+import { TypeFilesModal } from "./type-files-modal.js";
 
 export const ZODSIDIAN_VIEW_TYPE = "zodsidian-main";
 
@@ -16,6 +17,9 @@ export class ZodsidianView extends ItemView {
   private report: VaultReport | null = null;
   private fileSectionEl!: HTMLElement;
   private vaultSectionEl!: HTMLElement;
+  private fileTabBtn!: HTMLButtonElement;
+  private vaultTabBtn!: HTMLButtonElement;
+  private activeTab: "file" | "vault" = "file";
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -45,6 +49,7 @@ export class ZodsidianView extends ItemView {
 
   setFileResult(filePath: string, issues: ValidationIssue[], isTyped: boolean): void {
     this.fileState = { filePath, issues, isTyped };
+    this.activateTab("file");
     this.renderFileSection();
   }
 
@@ -63,8 +68,18 @@ export class ZodsidianView extends ItemView {
     container.empty();
     container.addClass("zodsidian-view");
 
+    const tabBar = container.createDiv({ cls: "zs-tab-bar" });
+    this.fileTabBtn = tabBar.createEl("button", {
+      text: "File",
+      cls: "zs-tab is-active",
+    });
+    this.vaultTabBtn = tabBar.createEl("button", { text: "Vault", cls: "zs-tab" });
+
     this.fileSectionEl = container.createDiv({ cls: "zs-section" });
-    this.vaultSectionEl = container.createDiv({ cls: "zs-section" });
+    this.vaultSectionEl = container.createDiv({ cls: "zs-section zs-hidden" });
+
+    this.fileTabBtn.addEventListener("click", () => this.activateTab("file"));
+    this.vaultTabBtn.addEventListener("click", () => this.activateTab("vault"));
 
     this.renderFileSection();
     this.renderVaultSection();
@@ -73,13 +88,19 @@ export class ZodsidianView extends ItemView {
     this.onOpened();
   }
 
+  private activateTab(tab: "file" | "vault"): void {
+    this.activeTab = tab;
+    if (!this.fileTabBtn) return;
+    this.fileTabBtn.toggleClass("is-active", tab === "file");
+    this.vaultTabBtn.toggleClass("is-active", tab === "vault");
+    this.fileSectionEl.toggleClass("zs-hidden", tab !== "file");
+    this.vaultSectionEl.toggleClass("zs-hidden", tab !== "vault");
+  }
+
   private renderFileSection(): void {
     const el = this.fileSectionEl;
     if (!el) return;
     el.empty();
-
-    const header = el.createDiv({ cls: "zs-section-header" });
-    header.createSpan({ text: "CURRENT FILE" });
 
     const body = el.createDiv({ cls: "zs-section-body" });
     const panel = body.createDiv({ cls: "zodsidian-panel" });
@@ -175,16 +196,13 @@ export class ZodsidianView extends ItemView {
     if (!el) return;
     el.empty();
 
-    const header = el.createDiv({ cls: "zs-section-header" });
-    header.createSpan({ text: "VAULT" });
+    const body = el.createDiv({ cls: "zs-section-body" });
 
-    const fixAllBtn = header.createEl("button", {
+    const fixAllBtn = body.createEl("button", {
       text: "Fix All",
       cls: "zodsidian-fix-btn",
     });
     fixAllBtn.addEventListener("click", () => this.onFixVault());
-
-    const body = el.createDiv({ cls: "zs-section-body" });
 
     if (!this.report) {
       const loader = body.createDiv({ cls: "zs-cube-loader" });
@@ -201,7 +219,6 @@ export class ZodsidianView extends ItemView {
     const panel = body.createDiv({ cls: "zodsidian-report-panel" });
     this.renderVaultHealth(panel);
     this.renderTypeBreakdown(panel);
-    this.renderUnknownTypes(panel);
     this.renderActiveMappings(panel);
   }
 
@@ -246,45 +263,48 @@ export class ZodsidianView extends ItemView {
     }
   }
 
+  /**
+   * Unified type list — known types (✓) and unknown types (?) in one scrollable list.
+   * Clicking any row opens a modal listing all files of that type.
+   */
   private renderTypeBreakdown(parent: HTMLElement): void {
     const section = parent.createDiv({ cls: "zodsidian-report-section" });
     section.createEl("h3", { text: "Types" });
 
-    const breakdown = this.report!.typeBreakdown;
-    if (breakdown.length === 0) {
+    const allTypes = [
+      ...this.report!.typeBreakdown.map((t) => ({ ...t, isKnown: true })),
+      ...this.report!.unknownTypes.map((t) => ({ ...t, isKnown: false })),
+    ];
+
+    if (allTypes.length === 0) {
       section.createDiv({ cls: "zodsidian-empty", text: "No typed files found" });
       return;
     }
 
     const list = section.createEl("ul", { cls: "zodsidian-type-list" });
-    for (const { type, count } of breakdown) {
-      const item = list.createEl("li");
-      item.createSpan({ text: `${type}: `, cls: "zodsidian-type-name" });
-      item.createSpan({ text: `${count} files` });
-    }
-  }
+    for (const { type, count, isKnown } of allTypes) {
+      const item = list.createEl("li", { cls: "zodsidian-type-row" });
 
-  private renderUnknownTypes(parent: HTMLElement): void {
-    const unknownTypes = this.report!.unknownTypes;
-    if (unknownTypes.length === 0) return;
+      const icon = item.createSpan({ cls: "zodsidian-stat-icon" });
+      setIcon(icon, isKnown ? "check-circle" : "help-circle");
 
-    const section = parent.createDiv({ cls: "zodsidian-report-section" });
-    const header = section.createDiv({ cls: "zodsidian-section-header" });
-    const titleSpan = header.createSpan();
-    const icon = titleSpan.createSpan({ cls: "zodsidian-stat-icon" });
-    setIcon(icon, "help-circle");
-    titleSpan.createEl("h3", { text: " Unknown Types" });
+      item.createSpan({ text: type, cls: "zodsidian-type-name" });
+      item.createSpan({ text: `${count} files`, cls: "zs-type-count" });
 
-    const list = section.createEl("ul", { cls: "zodsidian-unknown-list" });
-    for (const { type, count } of unknownTypes) {
-      const item = list.createEl("li");
-      item.createSpan({ text: `${type}: `, cls: "zodsidian-type-name" });
-      item.createSpan({ text: `${count} files ` });
-      const mapBtn = item.createEl("button", {
-        text: "Map...",
-        cls: "zodsidian-map-btn",
+      if (!isKnown) {
+        const mapBtn = item.createEl("button", {
+          text: "Convert",
+          cls: "zodsidian-map-btn",
+        });
+        mapBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          this.onMapType(type);
+        });
+      }
+
+      item.addEventListener("click", () => {
+        new TypeFilesModal(this.app, type, this.report!.typeFiles[type] ?? []).open();
       });
-      mapBtn.addEventListener("click", () => this.onMapType(type));
     }
   }
 
