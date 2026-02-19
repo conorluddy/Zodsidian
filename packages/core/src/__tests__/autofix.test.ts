@@ -4,6 +4,7 @@ import {
   sortKeys,
   populateMissingFields,
   renameFields,
+  inferIdFromTitle,
 } from "../autofix/index.js";
 import { parseFrontmatter } from "../parser/index.js";
 import { loadSchemas, clearRegistry } from "../schema/index.js";
@@ -178,6 +179,68 @@ Body`;
     expect(result.content).toContain('created: "2026-01-15"');
     expect(result.content).not.toContain("project:");
     expect(result.content).not.toContain("date:");
+  });
+});
+
+describe("inferIdFromTitle", () => {
+  beforeEach(() => {
+    clearRegistry();
+    loadSchemas();
+  });
+
+  it("infers id from type + title when id is missing", () => {
+    const data = { type: "project", title: "My Great App", status: "active" };
+    const result = inferIdFromTitle(data);
+    expect(result.id).toBe("project-my-great-app");
+  });
+
+  it("infers id from type + title when id is empty string", () => {
+    const data = { type: "project", id: "", title: "Grapla", status: "active" };
+    const result = inferIdFromTitle(data);
+    expect(result.id).toBe("project-grapla");
+  });
+
+  it("does not overwrite a non-empty id", () => {
+    const data = {
+      type: "project",
+      id: "proj-existing",
+      title: "Something",
+      status: "active",
+    };
+    const result = inferIdFromTitle(data);
+    expect(result.id).toBe("proj-existing");
+  });
+
+  it("skips if no title available", () => {
+    const data = { type: "project", status: "active" };
+    const result = inferIdFromTitle(data);
+    expect(result.id).toBeUndefined();
+  });
+
+  it("skips if type is not registered", () => {
+    const data = { type: "unknown-type", title: "Test" };
+    const result = inferIdFromTitle(data);
+    expect(result.id).toBeUndefined();
+  });
+
+  it("slugifies special characters and spaces", () => {
+    const data = {
+      type: "plan",
+      title: "Validation panel — right leaf showing issues",
+      status: "draft",
+    };
+    const result = inferIdFromTitle(data);
+    expect(result.id).toBe("plan-validation-panel-right-leaf-showing-issues");
+  });
+
+  it("integrates with applyFixes + populateMissingFields via extraStrategies", () => {
+    const content = `---\ntype: plan\ntitle: My Plan\nstatus: draft\n---\n\nBody`;
+    const result = applyFixes(content, {
+      extraStrategies: [inferIdFromTitle, populateMissingFields],
+    });
+    const parsed = parseFrontmatter(result.content);
+    const data = parsed.data as Record<string, unknown>;
+    expect(data.id).toBe("plan-my-plan");
   });
 });
 

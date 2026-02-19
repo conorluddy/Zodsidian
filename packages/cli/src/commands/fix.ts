@@ -4,6 +4,7 @@ import {
   loadSchemas,
   applyFixes,
   populateMissingFields,
+  inferIdFromTitle,
   renameFields,
   type FixStrategy,
 } from "@zodsidian/core";
@@ -33,6 +34,7 @@ export async function fixCommand(dir: string, options: FixCommandOptions): Promi
     const preStrategies: FixStrategy[] = [];
     const extraStrategies: FixStrategy[] = [];
     if (options.populate) {
+      extraStrategies.push(inferIdFromTitle);
       extraStrategies.push(populateMissingFields);
     }
     if (options.renameField && options.renameField.length > 0) {

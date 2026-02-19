@@ -5,6 +5,7 @@ export {
   sortKeysBySchema,
   removeUnknownKeys,
   populateMissingFields,
+  inferIdFromTitle,
   renameFields,
   type FixStrategy,
 } from "./strategies.js";

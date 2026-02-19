@@ -68,3 +68,33 @@ export const populateMissingFields: FixStrategy = (data) => {
   const defaults = extractSchemaDefaults(entry);
   return { ...defaults, ...data };
 };
+
+/**
+ * Infers the id field from `${type}-${slug(title)}` when the id field is
+ * missing or empty. Designed to run before `populateMissingFields` so the
+ * generated id survives the merge rather than being overwritten by the
+ * empty-string default.
+ */
+export const inferIdFromTitle: FixStrategy = (data) => {
+  const typeName = typeof data.type === "string" ? data.type : undefined;
+  const entry = typeName ? getSchemaEntry(typeName) : undefined;
+  if (!entry) return data;
+
+  const idField = entry.idField ?? "id";
+  const currentId = data[idField];
+
+  // Skip if id already has a non-empty value
+  if (typeof currentId === "string" && currentId.length > 0) return data;
+
+  const title = typeof data.title === "string" ? data.title : undefined;
+  if (!title || title.length === 0) return data;
+
+  return { ...data, [idField]: `${typeName}-${slugify(title)}` };
+};
+
+function slugify(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
