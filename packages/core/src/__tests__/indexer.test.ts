@@ -188,6 +188,54 @@ projects:
   });
 });
 
+describe("FileNode.frontmatter", () => {
+  beforeEach(() => {
+    clearRegistry();
+    loadSchemas();
+  });
+
+  it("populates frontmatter with parsed data for typed files", () => {
+    const files = [
+      {
+        filePath: "projects/alpha.md",
+        content:
+          "---\ntype: project\nid: proj-alpha\ntitle: Alpha\nstatus: active\n---\n",
+      },
+    ];
+    const index = buildVaultIndex(files);
+    const node = index.files.get("projects/alpha.md")!;
+    expect(node.frontmatter).toBeDefined();
+    expect(node.frontmatter?.type).toBe("project");
+    expect(node.frontmatter?.status).toBe("active");
+  });
+
+  it("leaves frontmatter undefined for untyped files", () => {
+    const files = [
+      {
+        filePath: "notes/plain.md",
+        content: "# Just a note\nNo frontmatter here.",
+      },
+    ];
+    const index = buildVaultIndex(files);
+    const node = index.files.get("notes/plain.md")!;
+    expect(node.frontmatter).toBeUndefined();
+  });
+
+  it("normalises YAML date values to strings in frontmatter", () => {
+    const files = [
+      {
+        filePath: "projects/dated.md",
+        content:
+          "---\ntype: project\nid: proj-dated\ntitle: Dated\nstatus: active\ncreated: 2026-01-15\n---\n",
+      },
+    ];
+    const index = buildVaultIndex(files);
+    const node = index.files.get("projects/dated.md")!;
+    expect(typeof node.frontmatter?.created).toBe("string");
+    expect(node.frontmatter?.created).toBe("2026-01-15");
+  });
+});
+
 describe("validateVault", () => {
   beforeEach(() => {
     clearRegistry();

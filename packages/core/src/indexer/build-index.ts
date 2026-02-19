@@ -113,5 +113,6 @@ function createFileNode(
     isValid: errors === 0,
     errorCount: errors,
     warningCount: warnings,
+    frontmatter: data,
   };
 }
