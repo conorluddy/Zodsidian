@@ -23,6 +23,25 @@ importers:
         specifier: ^3.0.5
         version: 3.2.4(@types/node@25.2.3)(yaml@2.8.2)
 
+  packages/aii:
+    dependencies:
+      "@zodsidian/core":
+        specifier: workspace:*
+        version: link:../core
+      commander:
+        specifier: ^13.1.0
+        version: 13.1.0
+    devDependencies:
+      "@types/node":
+        specifier: ^25.2.3
+        version: 25.2.3
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.4(@types/node@25.2.3)(yaml@2.8.2)
+
   packages/cli:
     dependencies:
       "@zodsidian/core":

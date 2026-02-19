@@ -4,6 +4,9 @@ import {
   sortKeys,
   populateMissingFields,
   renameFields,
+  inferIdFromTitle,
+  inferIdFromPath,
+  inferTitleFromPath,
 } from "../autofix/index.js";
 import { parseFrontmatter } from "../parser/index.js";
 import { loadSchemas, clearRegistry } from "../schema/index.js";
@@ -178,6 +181,148 @@ Body`;
     expect(result.content).toContain('created: "2026-01-15"');
     expect(result.content).not.toContain("project:");
     expect(result.content).not.toContain("date:");
+  });
+});
+
+describe("inferIdFromTitle", () => {
+  beforeEach(() => {
+    clearRegistry();
+    loadSchemas();
+  });
+
+  it("infers id from type + title when id is missing", () => {
+    const data = { type: "project", title: "My Great App", status: "active" };
+    const result = inferIdFromTitle(data);
+    expect(result.id).toBe("project-my-great-app");
+  });
+
+  it("infers id from type + title when id is empty string", () => {
+    const data = { type: "project", id: "", title: "Grapla", status: "active" };
+    const result = inferIdFromTitle(data);
+    expect(result.id).toBe("project-grapla");
+  });
+
+  it("does not overwrite a non-empty id", () => {
+    const data = {
+      type: "project",
+      id: "proj-existing",
+      title: "Something",
+      status: "active",
+    };
+    const result = inferIdFromTitle(data);
+    expect(result.id).toBe("proj-existing");
+  });
+
+  it("skips if no title available", () => {
+    const data = { type: "project", status: "active" };
+    const result = inferIdFromTitle(data);
+    expect(result.id).toBeUndefined();
+  });
+
+  it("skips if type is not registered", () => {
+    const data = { type: "unknown-type", title: "Test" };
+    const result = inferIdFromTitle(data);
+    expect(result.id).toBeUndefined();
+  });
+
+  it("slugifies special characters and spaces", () => {
+    const data = {
+      type: "plan",
+      title: "Validation panel — right leaf showing issues",
+      status: "draft",
+    };
+    const result = inferIdFromTitle(data);
+    expect(result.id).toBe("plan-validation-panel-right-leaf-showing-issues");
+  });
+
+  it("integrates with applyFixes + populateMissingFields via extraStrategies", () => {
+    const content = `---\ntype: plan\ntitle: My Plan\nstatus: draft\n---\n\nBody`;
+    const result = applyFixes(content, {
+      extraStrategies: [inferIdFromTitle, populateMissingFields],
+    });
+    const parsed = parseFrontmatter(result.content);
+    const data = parsed.data as Record<string, unknown>;
+    expect(data.id).toBe("plan-my-plan");
+  });
+});
+
+describe("inferIdFromPath", () => {
+  beforeEach(() => {
+    clearRegistry();
+    loadSchemas();
+  });
+
+  it("infers id from filename when id is missing", () => {
+    const data = { type: "project", title: "", status: "active" };
+    const result = inferIdFromPath("/vault/IOS Apps/Grapla/Grapla.md")(data);
+    expect(result.id).toBe("project-grapla");
+  });
+
+  it("infers id from filename when id is empty string", () => {
+    const data = { type: "project", id: "", title: "", status: "active" };
+    const result = inferIdFromPath("/vault/IOS Apps/Grapla/Grapla.md")(data);
+    expect(result.id).toBe("project-grapla");
+  });
+
+  it("slugifies the filename", () => {
+    const data = { type: "plan", status: "draft" };
+    const result = inferIdFromPath("/Plans/My Great Plan 2026.md")(data);
+    expect(result.id).toBe("plan-my-great-plan-2026");
+  });
+
+  it("does not overwrite an id set by inferIdFromTitle", () => {
+    const data = { type: "plan", title: "Real Title", status: "draft" };
+    const afterTitle = inferIdFromTitle(data);
+    expect(afterTitle.id).toBe("plan-real-title");
+    const afterPath = inferIdFromPath("/Plans/random-filename.md")(afterTitle);
+    expect(afterPath.id).toBe("plan-real-title"); // title wins
+  });
+
+  it("falls back to filename when title is empty", () => {
+    const data = { type: "project", id: "", title: "", status: "active" };
+    const afterTitle = inferIdFromTitle(data); // no-op: title empty
+    expect(afterTitle.id).toBe("");
+    const afterPath = inferIdFromPath("/IOS Apps/Grapla/Grapla.md")(afterTitle);
+    expect(afterPath.id).toBe("project-grapla");
+  });
+});
+
+describe("inferTitleFromPath", () => {
+  beforeEach(() => {
+    clearRegistry();
+    loadSchemas();
+  });
+
+  it("infers title from filename in sentence case", () => {
+    const data = { type: "project", id: "", title: "", status: "active" };
+    const result = inferTitleFromPath("/vault/IOS Apps/Grapla/Grapla.md")(data);
+    expect(result.title).toBe("Grapla");
+  });
+
+  it("converts hyphens to spaces and applies sentence case", () => {
+    const data = { type: "plan", status: "draft" };
+    const result = inferTitleFromPath("/Plans/my-great-plan.md")(data);
+    expect(result.title).toBe("My great plan");
+  });
+
+  it("does not overwrite a non-empty title", () => {
+    const data = { type: "plan", title: "Keep This Title", status: "draft" };
+    const result = inferTitleFromPath("/Plans/random-filename.md")(data);
+    expect(result.title).toBe("Keep This Title");
+  });
+
+  it("skips if type is not registered", () => {
+    const data = { type: "unknown-type", title: "" };
+    const result = inferTitleFromPath("/vault/something.md")(data);
+    expect(result.title).toBe("");
+  });
+
+  it("works end-to-end: inferTitleFromPath then inferIdFromTitle", () => {
+    const data = { type: "project", id: "", title: "", status: "active" };
+    const afterTitle = inferTitleFromPath("/vault/Grapla/Grapla.md")(data);
+    expect(afterTitle.title).toBe("Grapla");
+    const afterId = inferIdFromTitle(afterTitle);
+    expect(afterId.id).toBe("project-grapla");
   });
 });
 

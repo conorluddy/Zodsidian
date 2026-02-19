@@ -6,6 +6,8 @@ export interface FileNode {
   isValid: boolean;
   errorCount: number;
   warningCount: number;
+  /** Parsed frontmatter data. Present for typed files (has a `type` field), undefined for plain notes. */
+  frontmatter?: Record<string, unknown>;
 }
 
 export interface ReferenceEdge {

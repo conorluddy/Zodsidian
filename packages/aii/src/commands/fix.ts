@@ -1,5 +1,4 @@
 import { writeFile } from "node:fs/promises";
-import chalk from "chalk";
 import {
   loadSchemas,
   applyFixes,
@@ -39,17 +38,20 @@ export async function fixCommand(dir: string, options: FixCommandOptions): Promi
       for (const pair of options.renameField) {
         const eq = pair.indexOf("=");
         if (eq === -1) {
-          console.error(`Invalid --rename-field format "${pair}" — expected old=new`);
+          console.error(
+            JSON.stringify({
+              error: `Invalid --rename-field format "${pair}" — expected old=new`,
+            }),
+          );
           process.exit(EXIT_RUNTIME_ERROR);
         }
         renames[pair.slice(0, eq)] = pair.slice(eq + 1);
       }
-      // renameFields runs before normalizeArrayFields so the renamed field
-      // (e.g. project→projects) is coerced to an array in the same pass
       preStrategies.push(renameFields(renames));
     }
 
-    let fixedCount = 0;
+    const changed: Array<{ filePath: string }> = [];
+    const unchanged: Array<{ filePath: string }> = [];
 
     for (const { filePath, content } of files) {
       // populate strategies are per-file so inferIdFromPath can capture the path
@@ -68,25 +70,31 @@ export async function fixCommand(dir: string, options: FixCommandOptions): Promi
         extraStrategies: extraStrategies.length > 0 ? extraStrategies : undefined,
         config,
       });
-      if (!result.changed) continue;
 
-      fixedCount++;
-      if (options.dryRun) {
-        console.log(chalk.cyan(`[dry-run] Would fix: ${filePath}`));
-        continue;
-      }
-
-      if (options.write) {
-        await writeFile(filePath, result.content, "utf-8");
-        console.log(chalk.green(`Fixed: ${filePath}`));
+      if (result.changed) {
+        changed.push({ filePath });
+        if (options.write && !options.dryRun) {
+          await writeFile(filePath, result.content, "utf-8");
+        }
       } else {
-        console.log(chalk.yellow(`Fixable: ${filePath}`));
+        unchanged.push({ filePath });
       }
     }
 
-    console.log(`\n${fixedCount} file(s) ${options.write ? "fixed" : "fixable"}.`);
+    console.log(
+      JSON.stringify({
+        changed,
+        unchanged,
+        totalChanged: changed.length,
+        totalUnchanged: unchanged.length,
+        written: options.write === true && !options.dryRun,
+        dryRun: options.dryRun === true,
+      }),
+    );
   } catch (err) {
-    console.error(`Fix failed: ${err instanceof Error ? err.message : String(err)}`);
+    console.error(
+      JSON.stringify({ error: err instanceof Error ? err.message : String(err) }),
+    );
     process.exit(EXIT_RUNTIME_ERROR);
   }
 }

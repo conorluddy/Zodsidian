@@ -1,6 +1,14 @@
 import { Plugin, Notice, TFile } from "obsidian";
 import type { ValidationIssue } from "@zodsidian/core";
-import { applyFixes, getRegisteredTypes } from "@zodsidian/core";
+import {
+  applyFixes,
+  getRegisteredTypes,
+  inferIdFromTitle,
+  inferIdFromPath,
+  inferTitleFromPath,
+  populateMissingFields,
+  type FixStrategy,
+} from "@zodsidian/core";
 import { DEFAULT_SETTINGS, type ZodsidianSettings } from "./settings/settings.js";
 import { ZodsidianSettingTab } from "./settings/settings-tab.js";
 import { VaultAdapter } from "./services/vault-adapter.js";
@@ -40,7 +48,7 @@ export default class ZodsidianPlugin extends Plugin {
         new ZodsidianView(
           leaf,
           (filePath, type) => this.convertFile(filePath, type),
-          (filePath) => this.fixFile(filePath),
+          (filePath, opts) => this.fixFile(filePath, opts),
           () => this.fixVault(),
           (unknownType) => {
             new TypeMappingModal(this.app, unknownType, this.configService, () => {
@@ -174,12 +182,27 @@ export default class ZodsidianPlugin extends Plugin {
     }
   }
 
-  async fixFile(filePath: string): Promise<void> {
+  async fixFile(
+    filePath: string,
+    opts?: { unsafe?: boolean; populate?: boolean },
+  ): Promise<void> {
     const file = this.app.vault.getFileByPath(filePath);
     if (!file) return;
     try {
       const content = await this.vaultAdapter.readFile(file);
-      const result = applyFixes(content, { config: this.configService.getConfig() });
+      const extraStrategies: FixStrategy[] = opts?.populate
+        ? [
+            inferIdFromTitle,
+            inferIdFromPath(filePath),
+            inferTitleFromPath(filePath),
+            populateMissingFields,
+          ]
+        : [];
+      const result = applyFixes(content, {
+        config: this.configService.getConfig(),
+        unsafe: opts?.unsafe,
+        extraStrategies: extraStrategies.length > 0 ? extraStrategies : undefined,
+      });
 
       if (!result.changed) {
         new Notice("Nothing to fix.");
