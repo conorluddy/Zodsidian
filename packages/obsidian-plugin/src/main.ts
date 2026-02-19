@@ -20,6 +20,7 @@ import { StatusBarManager } from "./ui/status-bar.js";
 import { ZODSIDIAN_VIEW_TYPE, ZodsidianView } from "./ui/zodsidian-view.js";
 import { TypeMappingModal } from "./ui/type-mapping-modal.js";
 import { registerCommands, revealPanel } from "./commands/plugin-commands.js";
+import { FrontmatterSuggest } from "./ui/frontmatter-suggest.js";
 
 export default class ZodsidianPlugin extends Plugin {
   settings!: ZodsidianSettings;
@@ -61,6 +62,7 @@ export default class ZodsidianPlugin extends Plugin {
         ),
     );
 
+    this.registerEditorSuggest(new FrontmatterSuggest(this.app));
     this.addSettingTab(new ZodsidianSettingTab(this.app, this));
     registerCommands(this);
 
