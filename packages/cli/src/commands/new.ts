@@ -7,6 +7,9 @@ import { EXIT_RUNTIME_ERROR } from "../utils/exit-codes.js";
 interface NewCommandOptions {
   project?: string;
   out?: string;
+  id?: string;
+  title?: string;
+  field?: string[];
 }
 
 export async function newCommand(
@@ -19,6 +22,20 @@ export async function newCommand(
     const overrides: Record<string, unknown> = {};
     if (options.project) {
       overrides.projects = [options.project];
+    }
+    if (options.id) {
+      overrides.id = options.id;
+    }
+    if (options.title) {
+      overrides.title = options.title;
+    }
+    for (const pair of options.field ?? []) {
+      const eq = pair.indexOf("=");
+      if (eq === -1) {
+        console.error(`Invalid --field format "${pair}" — expected key=value`);
+        process.exit(EXIT_RUNTIME_ERROR);
+      }
+      overrides[pair.slice(0, eq)] = pair.slice(eq + 1);
     }
 
     const result = scaffold(type, { overrides });

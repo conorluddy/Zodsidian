@@ -9,14 +9,9 @@ import { ValidationService } from "./services/validation-service.js";
 import { ReportService } from "./services/report-service.js";
 import { IngestService } from "./services/ingest-service.js";
 import { StatusBarManager } from "./ui/status-bar.js";
-import { VALIDATION_VIEW_TYPE, ValidationView } from "./ui/validation-view.js";
-import { REPORT_VIEW_TYPE, ReportView } from "./ui/report-view.js";
+import { ZODSIDIAN_VIEW_TYPE, ZodsidianView } from "./ui/zodsidian-view.js";
 import { TypeMappingModal } from "./ui/type-mapping-modal.js";
-import {
-  registerCommands,
-  revealValidationPanel,
-  revealReportView,
-} from "./commands/plugin-commands.js";
+import { registerCommands, revealPanel } from "./commands/plugin-commands.js";
 
 export default class ZodsidianPlugin extends Plugin {
   settings!: ZodsidianSettings;
@@ -26,8 +21,6 @@ export default class ZodsidianPlugin extends Plugin {
   reportService!: ReportService;
   ingestService!: IngestService;
   private statusBar!: StatusBarManager;
-  private reportRibbonEl?: HTMLElement;
-  private unknownTypeCount = 0;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -42,65 +35,30 @@ export default class ZodsidianPlugin extends Plugin {
     this.statusBar = new StatusBarManager(this);
 
     this.registerView(
-      VALIDATION_VIEW_TYPE,
+      ZODSIDIAN_VIEW_TYPE,
       (leaf) =>
-        new ValidationView(
+        new ZodsidianView(
           leaf,
           (filePath, type) => this.convertFile(filePath, type),
           (filePath) => this.fixFile(filePath),
+          () => this.fixVault(),
+          (unknownType) => {
+            new TypeMappingModal(this.app, unknownType, this.configService, () => {
+              this.refreshReport();
+            }).open();
+          },
+          () => {
+            this.refreshReport();
+          },
         ),
     );
-    this.registerView(REPORT_VIEW_TYPE, (leaf) => {
-      return new ReportView(leaf, (unknownType) => {
-        new TypeMappingModal(this.app, unknownType, this.configService, () => {
-          this.refreshReport();
-        }).open();
-      });
-    });
 
     this.addSettingTab(new ZodsidianSettingTab(this.app, this));
     registerCommands(this);
 
-    this.addRibbonIcon("shield-check", "Open Zodsidian validation panel", () => {
-      revealValidationPanel(this);
+    this.addRibbonIcon("shield-check", "Open Zodsidian panel", () => {
+      revealPanel(this);
     });
-
-    this.addRibbonIcon("wrench", "Fix vault (safe fixes)", async () => {
-      const files = this.vaultAdapter.getMarkdownFiles();
-      const config = this.configService.getConfig();
-      let fixedCount = 0;
-
-      for (const file of files) {
-        const content = await this.vaultAdapter.readFile(file);
-        const result = applyFixes(content, { config });
-        if (result.changed) {
-          await this.vaultAdapter.writeFile(file, result.content);
-          fixedCount++;
-        }
-      }
-
-      new Notice(fixedCount > 0 ? `Fixed ${fixedCount} file(s).` : "Nothing to fix.");
-
-      // Re-validate the active file so the panel and status bar update
-      const activeFile = this.app.workspace.getActiveFile();
-      if (activeFile?.path.endsWith(".md")) {
-        const validation = await this.validationService.validateFile(activeFile);
-        const errors = validation.issues.filter((i) => i.severity === "error").length;
-        const warnings = validation.issues.filter((i) => i.severity === "warning").length;
-        validation.isTyped
-          ? this.statusBar.update(errors, warnings)
-          : this.statusBar.clear();
-        this.updateView(activeFile.path, validation.issues, validation.isTyped);
-      }
-    });
-
-    this.reportRibbonEl = this.addRibbonIcon(
-      "bar-chart",
-      "Open Zodsidian vault report",
-      () => {
-        revealReportView(this);
-      },
-    );
 
     this.registerEvent(
       this.app.workspace.on("file-open", (file) => {
@@ -172,13 +130,13 @@ export default class ZodsidianPlugin extends Plugin {
     // If panel is already open (persisted by Obsidian), validate active file into it
     this.app.workspace.onLayoutReady(() => {
       const activeFile = this.app.workspace.getActiveFile();
-      if (activeFile?.path.endsWith(".md") && this.getValidationView()) {
+      if (activeFile?.path.endsWith(".md") && this.getPanel()) {
         this.validationService.validateFile(activeFile).then((result) => {
           this.updateView(activeFile.path, result.issues, result.isTyped);
         });
       }
 
-      // Background scan for unknown types
+      // Background scan for report data
       this.performBackgroundScan();
     });
   }
@@ -244,82 +202,85 @@ export default class ZodsidianPlugin extends Plugin {
     }
   }
 
-  private getValidationView(): ValidationView | null {
-    const leaf = this.app.workspace.getLeavesOfType(VALIDATION_VIEW_TYPE)[0];
-    if (!leaf) return null;
-    const view = leaf.view;
-    return view instanceof ValidationView ? view : null;
+  async fixVault(): Promise<void> {
+    const files = this.vaultAdapter.getMarkdownFiles();
+    const config = this.configService.getConfig();
+    let fixedCount = 0;
+
+    for (const file of files) {
+      const content = await this.vaultAdapter.readFile(file);
+      const result = applyFixes(content, { config });
+      if (result.changed) {
+        await this.vaultAdapter.writeFile(file, result.content);
+        fixedCount++;
+      }
+    }
+
+    new Notice(fixedCount > 0 ? `Fixed ${fixedCount} file(s).` : "Nothing to fix.");
+
+    // Re-validate active file so local section + status bar update
+    const activeFile = this.app.workspace.getActiveFile();
+    if (activeFile?.path.endsWith(".md")) {
+      const validation = await this.validationService.validateFile(activeFile);
+      const errors = validation.issues.filter((i) => i.severity === "error").length;
+      const warnings = validation.issues.filter((i) => i.severity === "warning").length;
+      validation.isTyped
+        ? this.statusBar.update(errors, warnings)
+        : this.statusBar.clear();
+      this.updateView(activeFile.path, validation.issues, validation.isTyped);
+    }
   }
 
-  private updateView(
+  getPanel(): ZodsidianView | null {
+    const leaf = this.app.workspace.getLeavesOfType(ZODSIDIAN_VIEW_TYPE)[0];
+    if (!leaf) return null;
+    const view = leaf.view;
+    return view instanceof ZodsidianView ? view : null;
+  }
+
+  updateView(
     filePath: string | null,
     issues?: ValidationIssue[],
     isTyped?: boolean,
   ): void {
-    const view = this.getValidationView();
-    if (!view) return;
+    const panel = this.getPanel();
+    if (!panel) return;
     if (!filePath) {
-      view.clearFile();
+      panel.clearFile();
     } else {
-      view.setFileResult(filePath, issues ?? [], isTyped ?? false);
+      panel.setFileResult(filePath, issues ?? [], isTyped ?? false);
     }
   }
 
   private async performBackgroundScan(): Promise<void> {
     try {
       const report = await this.reportService.buildReport();
-      this.unknownTypeCount = report.unknownTypes.length;
-      this.updateRibbonBadge();
 
       // Show first-run notice if unknown types detected
-      if (this.unknownTypeCount > 0 && !this.settings.hasSeenUnknownTypesNotice) {
+      if (report.unknownTypes.length > 0 && !this.settings.hasSeenUnknownTypesNotice) {
         new Notice(
-          `Zodsidian found ${this.unknownTypeCount} unknown type(s). Click the report icon to configure mappings.`,
+          `Zodsidian found ${report.unknownTypes.length} unknown type(s). Open the panel to configure mappings.`,
           10000,
         );
         this.settings.hasSeenUnknownTypesNotice = true;
         await this.saveSettings();
       }
+
+      // Populate vault section if panel is already open
+      const panel = this.getPanel();
+      if (panel) panel.setReport(report);
     } catch (err) {
       console.error("Zodsidian background scan failed:", err);
     }
   }
 
-  private async refreshReport(): Promise<void> {
+  async refreshReport(): Promise<void> {
     try {
       const report = await this.reportService.buildReport();
-      this.unknownTypeCount = report.unknownTypes.length;
-      this.updateRibbonBadge();
-
-      // Update report view if open
-      const leaf = this.app.workspace.getLeavesOfType(REPORT_VIEW_TYPE)[0];
-      if (leaf) {
-        const view = leaf.view;
-        if (view instanceof ReportView) {
-          view.setReport(report);
-        }
-      }
+      const panel = this.getPanel();
+      if (panel) panel.setReport(report);
     } catch (err) {
       console.error("Zodsidian report refresh failed:", err);
-    }
-  }
-
-  private updateRibbonBadge(): void {
-    if (!this.reportRibbonEl) return;
-
-    // Remove existing badge
-    const existing = this.reportRibbonEl.querySelector(".zodsidian-badge");
-    if (existing) {
-      existing.remove();
-    }
-
-    // Add badge if unknown types exist
-    if (this.unknownTypeCount > 0) {
-      const badge = this.reportRibbonEl.createSpan({
-        cls: "zodsidian-badge",
-        text: String(this.unknownTypeCount),
-      });
-      this.reportRibbonEl.appendChild(badge);
     }
   }
 }

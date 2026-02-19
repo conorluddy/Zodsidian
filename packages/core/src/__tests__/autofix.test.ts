@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { applyFixes, sortKeys, populateMissingFields } from "../autofix/index.js";
+import {
+  applyFixes,
+  sortKeys,
+  populateMissingFields,
+  renameFields,
+} from "../autofix/index.js";
 import { parseFrontmatter } from "../parser/index.js";
 import { loadSchemas, clearRegistry } from "../schema/index.js";
 
@@ -134,6 +139,45 @@ Body`;
 
     const result = applyFixes(content);
     expect(result.content).toContain("extraField");
+  });
+});
+
+describe("renameFields", () => {
+  it("renames an old key to a new key", () => {
+    const data = { type: "plan", project: "Zodsidian", date: "2026-01-01" };
+    const result = renameFields({ project: "projects", date: "created" })(data);
+    expect(result).toHaveProperty("projects", "Zodsidian");
+    expect(result).toHaveProperty("created", "2026-01-01");
+    expect(result).not.toHaveProperty("project");
+    expect(result).not.toHaveProperty("date");
+  });
+
+  it("does not overwrite an existing target key", () => {
+    const data = { type: "plan", date: "2026-01-01", created: "2025-12-01" };
+    const result = renameFields({ date: "created" })(data);
+    expect(result.created).toBe("2025-12-01");
+    expect(result).toHaveProperty("date"); // old key preserved, not removed
+  });
+
+  it("renames then normalizeArrayFields coerces to array via preStrategies", () => {
+    const content = `---
+type: plan
+title: My Plan
+status: draft
+project: Zodsidian
+tags: []
+date: "2026-01-15"
+---
+
+Body`;
+    const result = applyFixes(content, {
+      preStrategies: [renameFields({ project: "projects", date: "created" })],
+    });
+    expect(result.changed).toBe(true);
+    expect(result.content).toContain("- Zodsidian");
+    expect(result.content).toContain('created: "2026-01-15"');
+    expect(result.content).not.toContain("project:");
+    expect(result.content).not.toContain("date:");
   });
 });
 

@@ -8,6 +8,8 @@ import { queryCommand } from "./commands/query.js";
 import { detectCommand } from "./commands/detect.js";
 import { migrateCommand } from "./commands/migrate.js";
 
+const collect = (val: string, prev: string[]) => [...prev, val];
+
 const program = new Command();
 
 program
@@ -30,6 +32,12 @@ program
   .option("--unsafe", "Apply unsafe fixes (e.g. remove unknown keys)")
   .option("--dry-run", "Show what would be fixed without changing files")
   .option("--populate", "Fill missing required fields with schema defaults")
+  .option(
+    "--rename-field <old=new>",
+    "Rename a frontmatter key (repeatable)",
+    collect,
+    [],
+  )
   .option("--config <path>", "Path to .zodsidian.json config file")
   .action(fixCommand);
 
@@ -67,6 +75,14 @@ program
   .command("new <type>")
   .description("Scaffold a new document from its schema")
   .option("--project <id>", "Set project on the scaffolded document")
+  .option("--id <id>", "Set the id field on the scaffolded document")
+  .option("--title <title>", "Set the title field on the scaffolded document")
+  .option(
+    "--field <key=value>",
+    "Set any field (repeatable: --field status=done)",
+    collect,
+    [],
+  )
   .option("--out <dir>", "Write to directory instead of stdout")
   .action(newCommand);
 

@@ -33,8 +33,14 @@ export class ReportService {
    * Build a full vault report including stats, type breakdown, and unknown types
    */
   async buildReport(): Promise<VaultReport> {
-    const files = await this.vaultAdapter.getAllMarkdownFiles();
+    const tFiles = this.vaultAdapter.getMarkdownFiles();
     const config = this.configService.getConfig();
+    const files = await Promise.all(
+      tFiles.map(async (file) => ({
+        filePath: file.path,
+        content: await this.vaultAdapter.readFile(file),
+      })),
+    );
     const index = buildVaultIndex(files, config);
 
     const typeBreakdown = this.getTypeBreakdown(index);

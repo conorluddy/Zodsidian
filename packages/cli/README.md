@@ -163,7 +163,7 @@ zodsidian validate ./vault && echo "Vault is valid"
 **Auto-fix frontmatter issues.**
 
 ```bash
-zodsidian fix <dir> [--type <type>] [--write] [--unsafe] [--dry-run] [--populate]
+zodsidian fix <dir> [--type <type>] [--write] [--unsafe] [--dry-run] [--populate] [--rename-field old=new]
 ```
 
 **Arguments:**
@@ -177,6 +177,7 @@ zodsidian fix <dir> [--type <type>] [--write] [--unsafe] [--dry-run] [--populate
 - `--unsafe` — Apply unsafe fixes (e.g., remove unknown keys)
 - `--dry-run` — Preview fixes without changing files
 - `--populate` — Fill missing required fields with schema defaults
+- `--rename-field <old=new>` — Rename a frontmatter key (repeatable)
 
 **What it does:**
 
@@ -192,6 +193,10 @@ zodsidian fix <dir> [--type <type>] [--write] [--unsafe] [--dry-run] [--populate
 **Populate (`--populate`):**
 
 - Fill missing required fields with schema defaults (e.g., `tags: []`)
+
+**Rename fields (`--rename-field`):**
+
+- Renames a frontmatter key. Only renames if the old key exists and the new key does not — never overwrites. Runs before array normalization so renamed fields (e.g. `projects`) are correctly coerced to arrays in the same pass. Repeatable for multiple renames.
 
 **Exit codes:**
 
@@ -215,6 +220,9 @@ zodsidian fix ./vault --type project --write
 
 # Fill missing fields
 zodsidian fix ./vault --write --populate
+
+# Migrate legacy plan fields to canonical names
+zodsidian fix ./vault --type plan --rename-field project=projects --rename-field date=created --write
 ```
 
 **Example output:**
@@ -366,7 +374,7 @@ zodsidian report ./vault --type project
 **Scaffold a new document from its schema.**
 
 ```bash
-zodsidian new <type> [--project <id>] [--out <dir>]
+zodsidian new <type> [--project <id>] [--id <id>] [--title <title>] [--field key=value] [--out <dir>]
 ```
 
 **Arguments:**
@@ -376,14 +384,18 @@ zodsidian new <type> [--project <id>] [--out <dir>]
 **Options:**
 
 - `--project <id>` — Link to a project (sets `projects: [<id>]`)
+- `--id <id>` — Set the `id` field on the scaffolded document
+- `--title <title>` — Set the `title` field on the scaffolded document
+- `--field <key=value>` — Set any frontmatter field (repeatable)
 - `--out <dir>` — Write to directory (default: stdout)
 
 **What it does:**
 
 1. Looks up schema for `<type>` in registry
 2. Generates valid frontmatter with defaults
-3. Creates markdown file with title header
-4. Writes to `<out>/<type>-<timestamp>.md` or stdout
+3. Applies any provided field overrides (`--id`, `--title`, `--field`)
+4. Creates markdown file with title header
+5. Writes to `<out>/<type>-new.md` or stdout
 
 **Schema-driven:** No template files. The Zod schema defines structure and defaults.
 
@@ -398,14 +410,17 @@ zodsidian new <type> [--project <id>] [--out <dir>]
 # Print to stdout
 zodsidian new project
 
+# Scaffold with known fields pre-filled
+zodsidian new plan --id zodsidian-my-feature --title "My Feature Plan"
+
 # Write to vault
 zodsidian new project --out ./vault
 
 # Link decision to project
 zodsidian new decision --project proj-1 --out ./vault
 
-# Create idea
-zodsidian new idea --project proj-1 --out ./vault
+# Set arbitrary fields
+zodsidian new decision --field status=accepted --field title="Use TypeScript"
 ```
 
 **Example output (stdout):**
