@@ -1,8 +1,7 @@
 import { Notice } from "obsidian";
 import type ZodsidianPlugin from "../main.js";
 import { getRegisteredTypes, type ValidationIssue } from "@zodsidian/core";
-import { VALIDATION_VIEW_TYPE, ValidationView } from "../ui/validation-view.js";
-import { REPORT_VIEW_TYPE, ReportView } from "../ui/report-view.js";
+import { ZODSIDIAN_VIEW_TYPE, ZodsidianView } from "../ui/zodsidian-view.js";
 
 export function registerCommands(plugin: ZodsidianPlugin): void {
   plugin.addCommand({
@@ -12,7 +11,7 @@ export function registerCommands(plugin: ZodsidianPlugin): void {
       if (!ctx.file) return;
       const result = await plugin.validationService.validateFile(ctx.file);
 
-      updateValidationView(plugin, ctx.file.path, result.issues, result.isTyped);
+      updatePanel(plugin, ctx.file.path, result.issues, result.isTyped);
 
       if (result.issues.length === 0) {
         new Notice("Zodsidian: No issues found.");
@@ -41,7 +40,7 @@ export function registerCommands(plugin: ZodsidianPlugin): void {
       if (activeFile) {
         const cached = plugin.validationService.getCachedResult(activeFile.path);
         if (cached) {
-          updateValidationView(plugin, activeFile.path, cached.issues, cached.isTyped);
+          updatePanel(plugin, activeFile.path, cached.issues, cached.isTyped);
         }
       }
 
@@ -71,79 +70,55 @@ export function registerCommands(plugin: ZodsidianPlugin): void {
   }
 
   plugin.addCommand({
-    id: "open-validation-panel",
-    name: "Open validation panel",
+    id: "open-panel",
+    name: "Open panel",
     callback: async () => {
-      await revealValidationPanel(plugin);
-    },
-  });
-
-  plugin.addCommand({
-    id: "open-report",
-    name: "Open vault report",
-    callback: async () => {
-      await revealReportView(plugin);
+      await revealPanel(plugin);
     },
   });
 }
 
-export async function revealValidationPanel(plugin: ZodsidianPlugin): Promise<void> {
-  const existing = plugin.app.workspace.getLeavesOfType(VALIDATION_VIEW_TYPE);
+export async function revealPanel(plugin: ZodsidianPlugin): Promise<void> {
+  const existing = plugin.app.workspace.getLeavesOfType(ZODSIDIAN_VIEW_TYPE);
   if (existing.length === 0) {
     const leaf = plugin.app.workspace.getRightLeaf(false);
-    if (leaf) {
-      await leaf.setViewState({ type: VALIDATION_VIEW_TYPE, active: true });
-    }
+    if (leaf) await leaf.setViewState({ type: ZODSIDIAN_VIEW_TYPE, active: true });
   } else {
     plugin.app.workspace.revealLeaf(existing[0]);
   }
 
-  // Validate the current file into the panel
+  // Populate both sections immediately
   const activeFile = plugin.app.workspace.getActiveFile();
   if (activeFile?.path.endsWith(".md")) {
     const result = await plugin.validationService.validateFile(activeFile);
-    updateValidationView(plugin, activeFile.path, result.issues, result.isTyped);
+    updatePanel(plugin, activeFile.path, result.issues, result.isTyped);
   }
-}
-
-export async function revealReportView(plugin: ZodsidianPlugin): Promise<void> {
-  const existing = plugin.app.workspace.getLeavesOfType(REPORT_VIEW_TYPE);
-  if (existing.length === 0) {
-    const leaf = plugin.app.workspace.getRightLeaf(false);
-    if (leaf) {
-      await leaf.setViewState({ type: REPORT_VIEW_TYPE, active: true });
-    }
-  } else {
-    plugin.app.workspace.revealLeaf(existing[0]);
-  }
-
-  // Build and display the report
   const report = await plugin.reportService.buildReport();
-  updateReportView(plugin, report);
+  setReportInPanel(plugin, report);
 }
 
-function updateValidationView(
+export function updatePanel(
   plugin: ZodsidianPlugin,
   filePath: string,
   issues: ValidationIssue[],
   isTyped: boolean,
 ): void {
-  const leaf = plugin.app.workspace.getLeavesOfType(VALIDATION_VIEW_TYPE)[0];
+  const leaf = plugin.app.workspace.getLeavesOfType(ZODSIDIAN_VIEW_TYPE)[0];
   if (!leaf) return;
   const view = leaf.view;
-  if (view instanceof ValidationView) {
+  if (view instanceof ZodsidianView) {
     view.setFileResult(filePath, issues, isTyped);
   }
 }
 
-function updateReportView(
+export function setReportInPanel(
   plugin: ZodsidianPlugin,
   report: import("../services/report-service.js").VaultReport,
 ): void {
-  const leaf = plugin.app.workspace.getLeavesOfType(REPORT_VIEW_TYPE)[0];
+  const leaf = plugin.app.workspace.getLeavesOfType(ZODSIDIAN_VIEW_TYPE)[0];
   if (!leaf) return;
   const view = leaf.view;
-  if (view instanceof ReportView) {
+  if (view instanceof ZodsidianView) {
     view.setReport(report);
   }
 }

@@ -1,6 +1,69 @@
-.zodsidian-panel {
+/* Cube loader */
+@keyframes zs-cube-wave {
+  0%, 100% {
+    opacity: 0.15;
+    color: var(--text-faint);
+  }
+  50% {
+    opacity: 1;
+    color: var(--interactive-accent);
+  }
+}
+
+.zs-cube-loader {
+  display: flex;
+  align-items: center;
+  padding: 16px 0;
+  gap: 4px;
+}
+
+.zs-cube {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: zs-cube-wave 1.2s ease-in-out infinite;
+  animation-fill-mode: both;
+}
+
+.zs-cube svg {
+  width: 100%;
+  height: auto;
+  max-height: 28px;
+  max-width: 28px;
+}
+
+/* Unified panel layout */
+.zodsidian-view {
+  overflow-y: auto;
+}
+
+.zs-section {
   padding: 12px;
-  background: var(--background-primary);
+}
+
+.zs-section + .zs-section {
+  border-top: 1px solid var(--background-modifier-border);
+  padding-top: 16px;
+}
+
+.zs-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.zs-section-header > span:first-child {
+  font-size: var(--font-ui-smaller);
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.zodsidian-panel {
+  padding: 0;
 }
 
 .zodsidian-file-header {
@@ -94,10 +157,57 @@
   font-size: var(--font-ui-small);
 }
 
+.zodsidian-action-bar {
+  margin-bottom: 10px;
+}
+
+.zodsidian-fix-btn {
+  padding: 3px 10px;
+  font-size: var(--font-ui-smaller);
+  background: var(--interactive-normal);
+  color: var(--text-normal);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.zodsidian-fix-btn:hover {
+  background: var(--interactive-hover);
+}
+
+.zodsidian-convert {
+  margin-top: 10px;
+}
+
+.zodsidian-convert-label {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.zodsidian-convert-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.zodsidian-convert-btn {
+  padding: 3px 10px;
+  font-size: var(--font-ui-smaller);
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.zodsidian-convert-btn:hover {
+  background: var(--interactive-accent-hover);
+}
+
 /* Report View Styles */
 .zodsidian-report-panel {
-  padding: 12px;
-  background: var(--background-primary);
+  padding: 0;
 }
 
 .zodsidian-report-section {
