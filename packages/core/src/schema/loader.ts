@@ -3,6 +3,7 @@ import {
   decisionSchema,
   ideaSchema,
   planSchema,
+  documentationSchema,
 } from "@zodsidian/schemas";
 import { registerSchema } from "./registry.js";
 
@@ -33,6 +34,11 @@ export function loadSchemas(): void {
     referenceFields: ["projects"],
   });
   registerSchema("plan", planSchema, {
+    idField: "id",
+    referenceFields: ["projects"],
+    keyOrder: ["type", "id", "title", "status", "projects", "tags", "created", "updated"],
+  });
+  registerSchema("documentation", documentationSchema, {
     idField: "id",
     referenceFields: ["projects"],
     keyOrder: ["type", "id", "title", "status", "projects", "tags", "created", "updated"],
