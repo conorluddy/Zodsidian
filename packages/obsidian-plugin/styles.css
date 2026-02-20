@@ -1,6 +1,7 @@
 /* Cube loader */
 @keyframes zs-cube-wave {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.15;
     color: var(--text-faint);
   }
@@ -42,9 +43,41 @@
   padding: 12px;
 }
 
-.zs-section + .zs-section {
-  border-top: 1px solid var(--background-modifier-border);
-  padding-top: 16px;
+/* Tab bar */
+.zs-tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding: 0 8px;
+  position: sticky;
+  top: 0;
+  background: var(--background-primary);
+  z-index: 1;
+}
+
+.zs-tab {
+  padding: 8px 12px;
+  font-size: var(--font-ui-small);
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+
+.zs-tab.is-active {
+  color: var(--text-normal);
+  border-bottom-color: var(--interactive-accent);
+}
+
+.zs-tab:hover:not(.is-active) {
+  color: var(--text-normal);
+}
+
+/* Hidden section utility */
+.zs-hidden {
+  display: none;
 }
 
 .zs-section-header {
@@ -295,7 +328,6 @@
 }
 
 .zodsidian-map-btn {
-  margin-left: 8px;
   padding: 2px 8px;
   font-size: var(--font-ui-smaller);
   background: var(--interactive-accent);
@@ -319,6 +351,17 @@
 }
 
 /* Type Mapping Modal */
+.zs-mapping-info {
+  margin: 4px 8px 0;
+  padding: 8px 12px;
+  background: var(--background-modifier-form-field);
+  border-left: 3px solid var(--interactive-accent);
+  border-radius: 4px;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
 .zodsidian-suggest-type {
   font-weight: 500;
 }
@@ -328,6 +371,57 @@
   color: var(--text-muted);
 }
 
+/* Clickable type rows */
+.zodsidian-type-row {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 4px 6px;
+  margin: 0 -6px;
+}
+
+.zodsidian-type-row:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* Name fills remaining space, pushing count + button to the right */
+.zodsidian-type-row .zodsidian-type-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.zs-type-count {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  white-space: nowrap;
+}
+
+/* TypeFilesModal */
+.zs-files-modal-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.zs-files-modal-item {
+  padding: 2px 0;
+}
+
+.zs-files-modal-link {
+  background: none;
+  border: none;
+  color: var(--text-accent);
+  cursor: pointer;
+  font-size: var(--font-ui-small);
+  text-align: left;
+  padding: 4px 0;
+  width: 100%;
+}
+
+.zs-files-modal-link:hover {
+  text-decoration: underline;
+}
 
 /* Ribbon Badge */
 .zodsidian-badge {

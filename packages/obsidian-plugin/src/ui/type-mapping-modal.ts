@@ -28,6 +28,18 @@ export class TypeMappingModal extends SuggestModal<string> {
     ]);
   }
 
+  onOpen(): void {
+    super.onOpen();
+    const info = this.modalEl.createDiv({ cls: "zs-mapping-info" });
+    info.createSpan({ text: "Choosing a type saves a permanent mapping — all " });
+    info.createEl("strong", { text: `"${this.unknownType}"` });
+    info.createSpan({
+      text: " files will be treated as that type going forward. You can remove the mapping in plugin settings.",
+    });
+    const results = this.modalEl.querySelector(".prompt-results");
+    if (results) this.modalEl.insertBefore(info, results);
+  }
+
   getSuggestions(query: string): string[] {
     if (!query) {
       return this.sortByRelevance(this.canonicalTypes);

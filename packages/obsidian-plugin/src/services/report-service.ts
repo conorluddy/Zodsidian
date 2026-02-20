@@ -18,6 +18,7 @@ export interface VaultReport {
   typeBreakdown: TypeBreakdown[];
   unknownTypes: UnknownType[];
   activeMappings: Record<string, string>;
+  typeFiles: Record<string, string[]>;
 }
 
 /**
@@ -43,50 +44,45 @@ export class ReportService {
     );
     const index = buildVaultIndex(files, config);
 
-    const typeBreakdown = this.getTypeBreakdown(index);
-    const unknownTypes = this.detectUnknownTypes(index);
+    const { breakdown, unknownTypes, typeFiles } = this.getTypeData(index);
     const activeMappings = config.typeMappings ?? {};
 
     return {
       stats: index.stats,
-      typeBreakdown,
+      typeBreakdown: breakdown,
       unknownTypes,
       activeMappings,
+      typeFiles,
     };
   }
 
   /**
-   * Get count of files per type
+   * Single-pass scan: returns type counts, unknown types, and file paths per type
    */
-  private getTypeBreakdown(index: VaultIndex): TypeBreakdown[] {
+  private getTypeData(index: VaultIndex): {
+    breakdown: TypeBreakdown[];
+    unknownTypes: UnknownType[];
+    typeFiles: Record<string, string[]>;
+  } {
+    const knownTypes = new Set(getRegisteredTypes());
     const counts = new Map<string, number>();
+    const typeFiles: Record<string, string[]> = {};
 
-    for (const [_, node] of index.files) {
+    for (const [filePath, node] of index.files) {
       if (node.type) {
         counts.set(node.type, (counts.get(node.type) ?? 0) + 1);
+        (typeFiles[node.type] ??= []).push(filePath);
       }
     }
 
-    return Array.from(counts.entries())
+    const sorted = Array.from(counts.entries())
       .map(([type, count]) => ({ type, count }))
       .sort((a, b) => b.count - a.count);
-  }
 
-  /**
-   * Detect types that aren't registered in the schema registry
-   */
-  private detectUnknownTypes(index: VaultIndex): UnknownType[] {
-    const knownTypes = new Set(getRegisteredTypes());
-    const unknownCounts = new Map<string, number>();
-
-    for (const [_, node] of index.files) {
-      if (node.type && !knownTypes.has(node.type)) {
-        unknownCounts.set(node.type, (unknownCounts.get(node.type) ?? 0) + 1);
-      }
-    }
-
-    return Array.from(unknownCounts.entries())
-      .map(([type, count]) => ({ type, count }))
-      .sort((a, b) => b.count - a.count);
+    return {
+      breakdown: sorted.filter(({ type }) => knownTypes.has(type)),
+      unknownTypes: sorted.filter(({ type }) => !knownTypes.has(type)),
+      typeFiles,
+    };
   }
 }
