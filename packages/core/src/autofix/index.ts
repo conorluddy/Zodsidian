@@ -11,4 +11,4 @@ export {
   renameFields,
   type FixStrategy,
 } from "./strategies.js";
-export { stringifyFrontmatter } from "./yaml-util.js";
+export { stringifyFrontmatter, type StringifyOptions } from "./yaml-util.js";

@@ -25,6 +25,29 @@ function normalizeDates(value: unknown): unknown {
   return value;
 }
 
+/**
+ * Obsidian stores reference fields as [[wiki-links]] in YAML.
+ * Strip the wrapper so the internal system always works with plain IDs.
+ */
+function normalizeWikiLinks(value: unknown): unknown {
+  if (typeof value === "string") {
+    const match = value.match(/^\[\[(.+)\]\]$/);
+    return match ? match[1] : value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(normalizeWikiLinks);
+  }
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [
+        k,
+        normalizeWikiLinks(v),
+      ]),
+    );
+  }
+  return value;
+}
+
 export function parseFrontmatter(content: string): FrontmatterResult {
   const fmRegex = /^---\r?\n/;
   if (!fmRegex.test(content)) {
@@ -56,7 +79,7 @@ export function parseFrontmatter(content: string): FrontmatterResult {
     return {
       // gray-matter (YAML 1.1) parses unquoted YYYY-MM-DD as Date objects.
       // Normalize them to ISO date strings so Zod's z.string().date() accepts them.
-      data: normalizeDates(result.data) as Record<string, unknown>,
+      data: normalizeWikiLinks(normalizeDates(result.data)) as Record<string, unknown>,
       span: {
         startLine: 0,
         endLine,

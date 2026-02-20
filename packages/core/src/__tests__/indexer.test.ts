@@ -145,6 +145,36 @@ name: Jane Doe
     expect(index.files.get("people/jane.md")?.id).toBe("jane-doe");
   });
 
+  it("strips [[wiki-links]] from reference values when building edges", () => {
+    const files = [
+      {
+        filePath: "projects/alpha.md",
+        content: `---
+type: project
+id: proj-alpha
+title: Alpha
+status: active
+---`,
+      },
+      {
+        filePath: "decisions/use-zod.md",
+        content: `---
+type: decision
+id: dec-1
+title: Use Zod
+decisionDate: "2026-01-15"
+outcome: Approved
+projects:
+  - "[[proj-alpha]]"
+---`,
+      },
+    ];
+
+    const index = buildVaultIndex(files);
+    expect(index.edges).toHaveLength(1);
+    expect(index.edges[0].targetId).toBe("proj-alpha");
+  });
+
   it("creates multiple edges from array reference field", () => {
     const files = [
       {

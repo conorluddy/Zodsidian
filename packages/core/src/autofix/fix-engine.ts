@@ -30,19 +30,18 @@ export function applyFixes(fileContent: string, options: FixOptions = {}): FixRe
   }
 
   let data = parsed.data as Record<string, unknown>;
+  const userType = typeof data.type === "string" ? data.type : undefined;
+  const canonicalType = userType ? resolveType(userType, options.config) : undefined;
+  const entry = canonicalType ? getSchemaEntry(canonicalType) : undefined;
+
   const strategies: FixStrategy[] = [
     ...(options.preStrategies ?? []),
     normalizeArrayFields,
     sortKeysBySchema,
   ];
 
-  if (options.unsafe) {
-    const userType = typeof data.type === "string" ? data.type : undefined;
-    const canonicalType = userType ? resolveType(userType, options.config) : undefined;
-    const entry = canonicalType ? getSchemaEntry(canonicalType) : undefined;
-    if (entry) {
-      strategies.push(removeUnknownKeys(new Set(Object.keys(entry.schema.shape))));
-    }
+  if (options.unsafe && entry) {
+    strategies.push(removeUnknownKeys(new Set(Object.keys(entry.schema.shape))));
   }
 
   strategies.push(...(options.extraStrategies ?? []));
@@ -51,7 +50,9 @@ export function applyFixes(fileContent: string, options: FixOptions = {}): FixRe
     data = strategy(data);
   }
 
-  const newYaml = stringifyFrontmatter(data);
+  const newYaml = stringifyFrontmatter(data, {
+    referenceFields: entry?.referenceFields,
+  });
   const newContent = `---\n${newYaml}\n---${parsed.body}`;
   const changed = newContent !== fileContent;
 
