@@ -3,6 +3,7 @@ import type { ValidationIssue } from "@zodsidian/core";
 import {
   applyFixes,
   getRegisteredTypes,
+  getSchemaEntry,
   inferIdFromTitle,
   inferIdFromPath,
   inferTitleFromPath,
@@ -139,6 +140,8 @@ export default class ZodsidianPlugin extends Plugin {
 
     // If panel is already open (persisted by Obsidian), validate active file into it
     this.app.workspace.onLayoutReady(() => {
+      this.registerReferenceFieldTypes();
+
       const activeFile = this.app.workspace.getActiveFile();
       if (activeFile?.path.endsWith(".md") && this.getPanel()) {
         this.validationService.validateFile(activeFile).then((result) => {
@@ -276,6 +279,26 @@ export default class ZodsidianPlugin extends Plugin {
       panel.clearFile();
     } else {
       panel.setFileResult(filePath, issues ?? [], isTyped ?? false);
+    }
+  }
+
+  /** Tell Obsidian to render reference fields as multitext (clickable links). */
+  private registerReferenceFieldTypes(): void {
+    const mgr = (this.app as Record<string, unknown>).metadataTypeManager as
+      | { setType(name: string, type: string): void }
+      | undefined;
+    if (!mgr) return;
+
+    const fields = new Set<string>();
+    for (const type of getRegisteredTypes()) {
+      const entry = getSchemaEntry(type);
+      if (entry?.referenceFields) {
+        for (const f of entry.referenceFields) fields.add(f);
+      }
+    }
+
+    for (const field of fields) {
+      mgr.setType(field, "multitext");
     }
   }
 

@@ -34,7 +34,9 @@ export class IngestService {
     // If the file had no frontmatter, preserve all content as the body
     const body = parsed.isValid ? parsed.body : `\n\n${content}`;
 
-    const yaml = stringifyFrontmatter(merged);
+    const yaml = stringifyFrontmatter(merged, {
+      referenceFields: entry.referenceFields,
+    });
     await this.vaultAdapter.writeFile(file, `---\n${yaml}\n---${body}`);
   }
 }

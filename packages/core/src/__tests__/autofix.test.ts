@@ -55,7 +55,7 @@ projects: proj-1
 Body`;
 
     const result = applyFixes(content);
-    expect(result.content).toContain("- proj-1");
+    expect(result.content).toContain('- "[[proj-1]]"');
     expect(result.changed).toBe(true);
   });
 
@@ -129,6 +129,46 @@ Body`;
     expect(result.content).toContain("title: Test");
   });
 
+  it("wraps reference field values in [[wiki-links]]", () => {
+    const content = `---
+type: decision
+id: dec-1
+title: Test Decision
+decisionDate: "2026-01-15"
+outcome: Approved
+projects:
+  - proj-alpha
+---
+
+Body`;
+
+    const result = applyFixes(content);
+    expect(result.changed).toBe(true);
+    expect(result.content).toContain("[[proj-alpha]]");
+  });
+
+  it("round-trips wiki-linked YAML: parse strips, fix wraps back", () => {
+    const content = `---
+type: decision
+id: dec-1
+title: Test Decision
+decisionDate: "2026-01-15"
+outcome: Approved
+projects:
+  - "[[proj-alpha]]"
+---
+
+Body`;
+
+    // First pass: parse strips [[]], fix wraps back
+    const result = applyFixes(content);
+    expect(result.content).toContain("[[proj-alpha]]");
+
+    // Second pass: should be stable
+    const result2 = applyFixes(result.content);
+    expect(result2.changed).toBe(false);
+  });
+
   it("keeps unknown keys when unsafe is false", () => {
     const content = `---
 type: project
@@ -177,7 +217,7 @@ Body`;
       preStrategies: [renameFields({ project: "projects", date: "created" })],
     });
     expect(result.changed).toBe(true);
-    expect(result.content).toContain("- Zodsidian");
+    expect(result.content).toContain('- "[[Zodsidian]]"');
     expect(result.content).toContain('created: "2026-01-15"');
     expect(result.content).not.toContain("project:");
     expect(result.content).not.toContain("date:");
