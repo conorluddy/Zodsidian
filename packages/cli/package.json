@@ -10,9 +10,11 @@
     "build": "tsc"
   },
   "dependencies": {
+    "@types/micromatch": "^4.0.10",
     "@zodsidian/core": "workspace:*",
     "chalk": "^5.4.1",
-    "commander": "^13.1.0"
+    "commander": "^13.1.0",
+    "micromatch": "^4.0.8"
   },
   "devDependencies": {
     "@types/node": "^25.2.3",

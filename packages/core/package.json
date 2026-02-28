@@ -9,8 +9,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@types/micromatch": "^4.0.10",
     "@zodsidian/schemas": "workspace:*",
     "gray-matter": "^4.0.3",
+    "micromatch": "^4.0.8",
     "yaml": "^2.7.0",
     "zod": "^3.24.2"
   },

@@ -22,6 +22,7 @@ import { IngestService } from "./services/ingest-service.js";
 import { StatusBarManager } from "./ui/status-bar.js";
 import { ZODSIDIAN_VIEW_TYPE, ZodsidianView } from "./ui/zodsidian-view.js";
 import { TypeMappingModal } from "./ui/type-mapping-modal.js";
+import { VaultReportModal } from "./ui/vault-report-modal.js";
 import { registerCommands, revealPanel } from "./commands/plugin-commands.js";
 import { FrontmatterSuggest } from "./ui/frontmatter-suggest.js";
 
@@ -67,6 +68,16 @@ export default class ZodsidianPlugin extends Plugin {
             if (file instanceof TFile) {
               await this.app.workspace.getLeaf().openFile(file);
             }
+          },
+          () => {
+            const report = this.reportService.getReport();
+            if (!report?.fileIssues.length) return;
+            new VaultReportModal(this.app, report.fileIssues, async (path) => {
+              const file = this.app.vault.getAbstractFileByPath(path);
+              if (file instanceof TFile) {
+                await this.app.workspace.getLeaf().openFile(file);
+              }
+            }).open();
           },
         ),
     );
@@ -246,8 +257,8 @@ export default class ZodsidianPlugin extends Plugin {
   }
 
   async fixVault(): Promise<void> {
-    const files = this.vaultAdapter.getMarkdownFiles();
     const config = this.configService.getConfig();
+    const files = this.vaultAdapter.getMarkdownFiles(config.excludeGlobs);
     let fixedCount = 0;
 
     for (const file of files) {

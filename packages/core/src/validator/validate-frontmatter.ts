@@ -75,6 +75,17 @@ export function validateFrontmatter(
 
   const result = schema.safeParse(dataForValidation);
   if (result.success) {
+    const updated = typeof data.updated === "string" ? data.updated : null;
+    const summarisedAt = typeof data.summarisedAt === "string" ? data.summarisedAt : null;
+    if (updated && summarisedAt && summarisedAt < updated) {
+      issues.push({
+        severity: "warning",
+        code: IssueCode.FM_STALE_SUMMARY,
+        message: `Summary not updated since last edit (summarisedAt: ${summarisedAt}, updated: ${updated})`,
+        path: ["summarisedAt"],
+        suggestion: "Regenerate the summary to reflect recent changes",
+      });
+    }
     return issues;
   }
 

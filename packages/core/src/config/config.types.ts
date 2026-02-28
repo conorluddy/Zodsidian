@@ -14,6 +14,13 @@ export const zodsidianConfigSchema = z
         "Map user-defined types to canonical schema types (e.g., 'project-index' → 'project')",
       ),
 
+    excludeGlobs: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Glob patterns for files to skip, relative to vault root (e.g., 'Templates/**')",
+      ),
+
     validation: z
       .object({
         warnOnMappedTypes: z

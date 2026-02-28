@@ -46,6 +46,10 @@ describe("introspectSchema", () => {
     expect(required).toContain("id");
     expect(required).toContain("title");
     expect(required).toContain("status");
+    expect(required).toContain("summary");
+    expect(required).toContain("created");
+    expect(required).toContain("updated");
+    expect(required).toContain("summarisedAt");
   });
 
   it("marks optional fields correctly", () => {
@@ -54,7 +58,6 @@ describe("introspectSchema", () => {
     expect(optional).toContain("platforms");
     expect(optional).toContain("ios_repo");
     expect(optional).toContain("tags");
-    expect(optional).toContain("created");
   });
 
   it("extracts enum values for enum fields", () => {

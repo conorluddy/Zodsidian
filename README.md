@@ -37,6 +37,50 @@ The CLI derives fields, defaults, and references directly from the Zod definitio
 
 Build an in-memory graph from the vault at runtime. Typed nodes (Project, Decision) connected by references and tags. Queryable via TypeScript API or exported as JSON for jq and external tooling.
 
+## Why a structured graph layer?
+
+The AII and core engine exist because raw markdown parsing doesn't scale. Here's the concrete difference.
+
+### Data quality
+
+**Validated types, not raw strings.** The graph guarantees `status` is one of `active | paused | completed | archived`. Raw YAML gives you whatever's in the file — `"Active"`, `"ACTIVE"`, `"acitve"` are all equally valid to a parser.
+
+**Date normalisation.** YAML 1.1 silently parses `2026-01-15` as a JS `Date` object. The pipeline normalises all dates to `YYYY-MM-DD` strings before they reach you. Raw gray-matter parsing returns `Date` objects that serialise inconsistently.
+
+**Structured errors, not thrown exceptions.** A malformed YAML file in a raw parser aborts your loop. The pipeline returns `{ severity, code, message, path, suggestion }` per issue and continues processing the rest of the vault. One broken file shouldn't stop a 500-file scan.
+
+### Graph and references
+
+**Reference resolution.** `projects: [proj-1, proj-2]` is just strings in raw YAML. The graph resolves those to typed nodes — title, type, filePath — so consumers display `"My Project"` not `"proj-1"`. Dangling references surface explicitly rather than silently returning `undefined`.
+
+**Graph traversal in one call.** `query --id proj-1` returns all incoming and outgoing edges instantly. At 1,000 files, finding everything linked to a project is one command vs. scanning every file for string matches.
+
+**Orphan detection.** The AII surfaces edges with no resolved target. At scale, vault integrity checks — "are there any broken references?" — become a single validate call rather than a custom cross-reference script.
+
+**Duplicate ID detection.** Two files with `id: proj-1` is a silent bug in raw parsing — you get whichever file happened to be processed last. `validateVault` surfaces `VAULT_DUPLICATE_ID` explicitly.
+
+### Scale and consistency
+
+**Single parse, multiple queries.** `buildVaultIndex` reads all files once into an in-memory structure. Raw parsing re-reads disk on every operation. At scale, one scan vs. N scans per workflow is a meaningful difference.
+
+**ID-based identity, not path-based.** Raw parsing ties document identity to file path. The graph indexes by `id` — move a file from `projects/alpha.md` to `archive/2024/alpha.md` and `query --id proj-alpha` still finds it; all incoming references still resolve. Path-based identity breaks the moment you reorganise.
+
+**Key ordering and normalisation.** Tools that write YAML back without respecting schema `keyOrder` gradually corrupt your frontmatter's canonical shape. The autofix layer enforces schema ordering on every write.
+
+**Exclude globs, config-driven filtering.** Raw iteration: you manually skip `_templates/`, `node_modules/`, etc. everywhere. The engine reads `zodsidian.config.json` and applies `excludeGlobs` consistently across every command.
+
+**Type mapping and aliasing.** Your vault may have `type: brief` where the schema expects `type: documentation`. The config `typeMappings` layer handles canonicalisation transparently. You'd have to bake that mapping into every script otherwise.
+
+### AI and tooling
+
+**Schema introspection.** `aii schema project` returns the full field list, types, required/optional, enum values, and descriptions — derived from the Zod schema at runtime. An AI agent can call this to discover what fields exist before constructing a query or generating a document. No separate documentation to maintain.
+
+**Machine-parseable output for pipelines.** Every AII command outputs clean JSON. Pipe `aii query --type project` into `jq`, into a CI step that fails if `validFiles < totalFiles`, into a dashboard script. Raw markdown → custom parser → normalise → filter is fragile glue you'd have to write and maintain.
+
+**The schema is the documentation.** At 50 files you remember what fields every type has. At 500 you don't — and neither does an agent reading your vault for the first time. `aii schema decision` answers that question authoritatively, derived from the same Zod definition that validates your data.
+
+---
+
 ## How it works
 
 ### 1. Define a schema

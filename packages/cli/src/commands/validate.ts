@@ -26,7 +26,7 @@ export async function validateCommand(
   try {
     loadSchemas();
     const config = await loadConfigForVault(dir, options.config);
-    let files = await walkMarkdownFiles(dir);
+    let files = await walkMarkdownFiles(dir, config.excludeGlobs);
     if (options.type) {
       files = filterByType(files, options.type);
     }
@@ -39,7 +39,15 @@ export async function validateCommand(
     for (const [filePath, node] of index.files) {
       if (!node.isValid) {
         const content = contentByPath.get(filePath);
-        if (!content) continue;
+        if (content === undefined) continue;
+        if (content === "") {
+          printIssue(filePath, {
+            severity: "error",
+            code: "FM_MISSING" as never,
+            message: "No frontmatter found",
+          });
+          continue;
+        }
         const parsed = parseFrontmatter(content);
         const issues = parsed.data
           ? [

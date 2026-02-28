@@ -10,6 +10,25 @@
 
 **Schema registry is the shared discovery mechanism.** All consumers use it to learn what types exist, what fields they have, what references they carry.
 
+## Why the graph layer beats raw parsing
+
+These are the concrete reasons we build this instead of parsing markdown directly:
+
+- **Validated types** — `status` is guaranteed `active | paused | completed | archived`. Raw YAML returns whatever's in the file.
+- **Date normalisation** — YAML 1.1 parses `2026-01-15` as a `Date` object. The pipeline normalises to `YYYY-MM-DD` strings before anything touches the data.
+- **Structured errors** — malformed files return `{ severity, code, message, path }` and processing continues. Raw parsers throw and abort.
+- **Reference resolution** — `projects: [proj-1]` resolves to a typed node with title, type, filePath. Raw YAML is just a string.
+- **Graph traversal** — incoming + outgoing edges in one call. At 1k files, "everything linked to proj-1" is one query not a grep.
+- **Orphan detection** — dangling references (edge exists, no target node) surface explicitly instead of silently returning `undefined`.
+- **Duplicate ID detection** — `VAULT_DUPLICATE_ID` surfaces before it silently corrupts queries.
+- **Single parse** — `buildVaultIndex` reads all files once. Raw parsing re-reads disk per operation.
+- **ID-based identity** — move a file anywhere and `query --id proj-1` still resolves. Path-based identity breaks on reorganisation.
+- **Type mapping** — `brief → documentation` handled in config. No per-script aliasing.
+- **Schema introspection** — `aii schema <type>` returns fields, types, required/optional, enum values at runtime. AI agents discover structure without reading source.
+- **Machine-parseable pipelines** — every AII command outputs JSON. Pipe into `jq`, CI checks, dashboards. No custom glue scripts.
+- **Key order enforcement** — autofix keeps frontmatter in schema-canonical order on every write. Raw writers gradually corrupt shape.
+- **Exclude globs** — `zodsidian.config.json` applies consistently everywhere. No per-script filtering logic.
+
 ## Key paths
 
 ```

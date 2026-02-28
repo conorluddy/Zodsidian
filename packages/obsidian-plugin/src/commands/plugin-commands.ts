@@ -26,7 +26,8 @@ export function registerCommands(plugin: ZodsidianPlugin): void {
     id: "validate-vault",
     name: "Validate entire vault",
     callback: async () => {
-      const files = plugin.vaultAdapter.getMarkdownFiles();
+      const excludeGlobs = plugin.configService.getConfig().excludeGlobs;
+      const files = plugin.vaultAdapter.getMarkdownFiles(excludeGlobs);
       let totalIssues = 0;
 
       for (const file of files) {

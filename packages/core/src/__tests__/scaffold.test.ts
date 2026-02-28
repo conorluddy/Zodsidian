@@ -4,6 +4,15 @@ import { parseFrontmatter } from "../parser/index.js";
 import { validateFrontmatter } from "../validator/index.js";
 import { loadSchemas, clearRegistry } from "../schema/index.js";
 
+// Required base fields for round-trip validation tests
+const BASE_OVERRIDES = {
+  summary:
+    "A test document created for validation purposes with all required fields present to ensure schema passes cleanly.",
+  created: "2026-01-01",
+  updated: "2026-01-15",
+  summarisedAt: "2026-01-15",
+};
+
 describe("scaffold", () => {
   beforeEach(() => {
     clearRegistry();
@@ -24,7 +33,7 @@ describe("scaffold", () => {
 
   it("scaffolded project with overrides validates without errors", () => {
     const result = scaffold("project", {
-      overrides: { id: "proj-rt", title: "Round Trip" },
+      overrides: { id: "proj-rt", title: "Round Trip", ...BASE_OVERRIDES },
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -44,6 +53,7 @@ describe("scaffold", () => {
         projects: ["proj-1"],
         decisionDate: "2026-02-15",
         outcome: "Approved",
+        ...BASE_OVERRIDES,
       },
     });
     expect(result.ok).toBe(true);
@@ -56,7 +66,7 @@ describe("scaffold", () => {
 
   it("scaffolded idea with minimal overrides validates without errors", () => {
     const result = scaffold("idea", {
-      overrides: { id: "idea-rt", title: "Test Idea" },
+      overrides: { id: "idea-rt", title: "Test Idea", ...BASE_OVERRIDES },
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -68,7 +78,7 @@ describe("scaffold", () => {
 
   it("scaffolded plan with overrides validates without errors", () => {
     const result = scaffold("plan", {
-      overrides: { id: "plan-rt", title: "Test Plan" },
+      overrides: { id: "plan-rt", title: "Test Plan", ...BASE_OVERRIDES },
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -80,7 +90,7 @@ describe("scaffold", () => {
 
   it("scaffolded documentation with overrides validates without errors", () => {
     const result = scaffold("documentation", {
-      overrides: { id: "doc-rt", title: "Getting Started" },
+      overrides: { id: "doc-rt", title: "Getting Started", ...BASE_OVERRIDES },
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -124,7 +134,8 @@ describe("scaffold", () => {
     expect(keys[0]).toBe("type");
     expect(keys[1]).toBe("id");
     expect(keys[2]).toBe("title");
-    expect(keys[3]).toBe("status");
+    expect(keys[3]).toBe("summary");
+    expect(keys[4]).toBe("status");
   });
 
   it("returns error for unknown schema type", () => {
@@ -147,6 +158,7 @@ describe("scaffold", () => {
     expect(keys[0]).toBe("type");
     expect(keys[1]).toBe("id");
     expect(keys[2]).toBe("title");
-    expect(keys[3]).toBe("status");
+    expect(keys[3]).toBe("summary");
+    expect(keys[4]).toBe("status");
   });
 });
