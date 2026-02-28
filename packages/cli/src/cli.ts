@@ -22,6 +22,7 @@ program
   .description("Validate frontmatter in all markdown files")
   .option("--type <type>", "Filter to a specific document type")
   .option("--config <path>", "Path to .zodsidian.json config file")
+  .option("--json", "Output results as JSON")
   .action(validateCommand);
 
 program
@@ -54,6 +55,7 @@ program
   .description("Print a summary report of vault health")
   .option("--type <type>", "Filter to a specific document type")
   .option("--config <path>", "Path to .zodsidian.json config file")
+  .option("--json", "Output results as JSON")
   .action(reportCommand);
 
 program
