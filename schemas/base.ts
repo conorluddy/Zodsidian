@@ -3,10 +3,10 @@ import { z } from "zod";
 export const baseFields = {
   summary: z
     .string()
-    .min(80)
+    .min(40)
     .max(280)
     .describe(
-      "Concise document summary (80–280 chars). Used for progressive disclosure — exposed before full content is loaded. Keep it current with the document.",
+      "Concise document summary (40–280 chars). Used for progressive disclosure — exposed before full content is loaded. Keep it current with the document.",
     ),
   projects: z
     .array(z.string())

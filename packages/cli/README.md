@@ -505,6 +505,31 @@ zodsidian query ./vault --type project | jq '.[].title'
 
 ---
 
+## Configuration
+
+Commands that scan a vault (`validate`, `fix`) auto-discover a config file in the vault root. Supported filenames (checked in order):
+
+1. `.zodsidian.json`
+2. `zodsidian.config.json`
+
+### `excludeGlobs`
+
+Glob patterns for files to skip during scanning, relative to vault root:
+
+```json
+{
+  "version": "1.0",
+  "excludeGlobs": ["_templates/**", "Archive/**", "*.excalidraw.md"]
+}
+```
+
+**Applied by:** `validate`, `fix`
+**Not applied by:** `index` (indexes all files by design)
+
+**Note — `**`matches bare directory paths too:**`\_templates/**`also matches`\_templates`itself (micromatch`**`= zero or more path segments). This has no practical effect since the walker only passes`.md` file paths, not directory names — but be aware when writing patterns.
+
+---
+
 ## Output Formatting
 
 ### Console Formatter

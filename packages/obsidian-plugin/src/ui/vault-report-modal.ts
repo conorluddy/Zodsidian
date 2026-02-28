@@ -1,5 +1,4 @@
 import { App, Modal, setIcon } from "obsidian";
-import { basename } from "path";
 import type { FileIssueEntry } from "../services/report-service.js";
 
 /**
@@ -10,7 +9,7 @@ export class VaultReportModal extends Modal {
   constructor(
     app: App,
     private fileIssues: FileIssueEntry[],
-    private onNavigate: (filePath: string) => void,
+    private onNavigate: (filePath: string) => Promise<void>,
   ) {
     super(app);
   }
@@ -40,7 +39,7 @@ export class VaultReportModal extends Modal {
       const fileInfo = rowBtn.createDiv({ cls: "zs-report-modal-file-info" });
       fileInfo.createSpan({
         cls: "zs-report-modal-basename",
-        text: basename(entry.filePath),
+        text: entry.filePath.split("/").pop() ?? entry.filePath,
       });
       fileInfo.createSpan({
         cls: "zs-report-modal-path",

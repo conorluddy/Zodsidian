@@ -138,6 +138,47 @@ describe("scaffold", () => {
     expect(keys[4]).toBe("status");
   });
 
+  it("scaffolded session with overrides validates without errors", () => {
+    const result = scaffold("session", {
+      overrides: {
+        id: "session-rt",
+        title: "Test Session",
+        date: "2026-01-20",
+        ...BASE_OVERRIDES,
+      },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const parsed = parseFrontmatter(result.value.content);
+    const issues = validateFrontmatter(parsed.data as Record<string, unknown>);
+    expect(issues).toHaveLength(0);
+  });
+
+  it("scaffolded backlog with overrides validates without errors", () => {
+    const result = scaffold("backlog", {
+      overrides: { id: "backlog-rt", title: "Test Backlog", ...BASE_OVERRIDES },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const parsed = parseFrontmatter(result.value.content);
+    const issues = validateFrontmatter(parsed.data as Record<string, unknown>);
+    expect(issues).toHaveLength(0);
+  });
+
+  it("scaffolded hub generates parseable frontmatter", () => {
+    // Hub is open-schema (no .strict(), no id, optional title) — scaffold + parse only
+    const result = scaffold("hub");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.type).toBe("hub");
+    const parsed = parseFrontmatter(result.value.content);
+    expect(parsed.isValid).toBe(true);
+    expect((parsed.data as Record<string, unknown>)["type"]).toBe("hub");
+  });
+
   it("returns error for unknown schema type", () => {
     const result = scaffold("nonexistent");
     expect(result.ok).toBe(false);

@@ -44,9 +44,6 @@ importers:
 
   packages/cli:
     dependencies:
-      "@types/micromatch":
-        specifier: ^4.0.10
-        version: 4.0.10
       "@zodsidian/core":
         specifier: workspace:*
         version: link:../core
@@ -60,6 +57,9 @@ importers:
         specifier: ^4.0.8
         version: 4.0.8
     devDependencies:
+      "@types/micromatch":
+        specifier: ^4.0.10
+        version: 4.0.10
       "@types/node":
         specifier: ^25.2.3
         version: 25.2.3
@@ -69,9 +69,6 @@ importers:
 
   packages/core:
     dependencies:
-      "@types/micromatch":
-        specifier: ^4.0.10
-        version: 4.0.10
       "@zodsidian/schemas":
         specifier: workspace:*
         version: link:../../schemas
@@ -88,6 +85,9 @@ importers:
         specifier: ^3.24.2
         version: 3.25.76
     devDependencies:
+      "@types/micromatch":
+        specifier: ^4.0.10
+        version: 4.0.10
       typescript:
         specifier: ^5.7.3
         version: 5.9.3

@@ -18,7 +18,7 @@ export const zodsidianConfigSchema = z
       .array(z.string())
       .optional()
       .describe(
-        "Glob patterns for files to skip, relative to vault root (e.g., 'Templates/**')",
+        "Glob patterns for files to skip, relative to vault root (e.g., '_templates/**'). Note: `**` matches zero or more path segments, so a pattern like '_templates/**' also matches the bare directory path — but the walker only passes .md file paths here, not directory names.",
       ),
 
     validation: z

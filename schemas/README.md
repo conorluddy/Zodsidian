@@ -119,13 +119,16 @@ The inferred type is used throughout core, CLI, and plugin code for type safety.
 
 ## Available Schemas
 
-| Type            | ID Field | Reference Fields | Purpose                                   |
-| --------------- | -------- | ---------------- | ----------------------------------------- |
-| `project`       | `id`     | `projects`       | Top-level organizational unit             |
-| `decision`      | `id`     | `projects`       | Architecture decision linked to a project |
-| `idea`          | `id`     | `projects`       | Raw idea linked to a project              |
-| `plan`          | `id`     | `projects`       | Implementation strategy for a task        |
-| `documentation` | `id`     | `projects`       | Written output child of a project         |
+| Type            | ID Field | Reference Fields | Purpose                                             |
+| --------------- | -------- | ---------------- | --------------------------------------------------- |
+| `project`       | `id`     | `projects`       | Top-level organizational unit                       |
+| `decision`      | `id`     | `projects`       | Architecture decision linked to a project           |
+| `idea`          | `id`     | `projects`       | Raw idea linked to a project                        |
+| `plan`          | `id`     | `projects`       | Implementation strategy for a task                  |
+| `documentation` | `id`     | `projects`       | Written output child of a project                   |
+| `session`       | `id`     | `projects`       | Work session log — retrospective Claude Code entry  |
+| `backlog`       | `id`     | `projects`       | Project backlog tracking open work items            |
+| `hub`           | —        | —                | Navigation/index page (open schema, no `.strict()`) |
 
 **Reference fields** are array fields that hold IDs of other documents. The indexer and validator use these to build the reference graph and detect broken links.
 

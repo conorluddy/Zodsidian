@@ -4,6 +4,7 @@ import {
   validateFrontmatter,
   buildVaultIndex,
   validateVault,
+  IssueCode,
 } from "@zodsidian/core";
 import { walkMarkdownFiles, filterByType } from "../utils/walk.js";
 import { loadConfigForVault } from "../utils/config-loader.js";
@@ -43,7 +44,7 @@ export async function validateCommand(
         if (content === "") {
           printIssue(filePath, {
             severity: "error",
-            code: "FM_MISSING" as never,
+            code: IssueCode.FM_MISSING,
             message: "No frontmatter found",
           });
           continue;
