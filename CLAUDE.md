@@ -40,14 +40,15 @@ packages/core/src/indexer/   — vault index builder
 packages/core/src/validator/ — frontmatter + vault validation
 packages/core/src/scaffold/  — schema-driven document generation
 packages/core/src/query/     — in-memory typed graph
-packages/cli/src/commands/   — CLI command handlers
+packages/cli/src/commands/   — human-facing CLI command handlers
+packages/aii/src/commands/   — AI-facing CLI commands (search, summary, query, schema, validate, fix)
 packages/obsidian-plugin/    — Obsidian plugin (skeleton)
 tests/fixtures/vault/        — test markdown files
 ```
 
 ## Pipeline
 
-Parse → Validate → Index → Report → Autofix
+Parse → Validate → Index → Report → Autofix → Scaffold → Query | Search → Summary
 
 ## Build & test
 
@@ -144,6 +145,14 @@ Zodsidian/
 │   │   │   └── cli.ts                  # Commander entry point
 │   │   ├── package.json
 │   │   └── README.md                   # CLI commands, flags, examples
+│   │
+│   ├── aii/                            # @zodsidian/aii — AI-facing CLI (aii)
+│   │   ├── src/
+│   │   │   ├── commands/               # search, summary, query, schema, validate, fix
+│   │   │   ├── utils/                  # walk, exit-codes, config-loader
+│   │   │   ├── __tests__/
+│   │   │   └── aii.ts                  # Commander entry point
+│   │   └── package.json
 │   │
 │   └── obsidian-plugin/                # @zodsidian/obsidian-plugin — Obsidian UI
 │       ├── src/
