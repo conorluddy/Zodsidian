@@ -53,6 +53,21 @@ describe("aii search", () => {
     expect((output as unknown[]).length).toBe(1);
   });
 
+  it("results include created and updated fields", async () => {
+    await searchCommand(FIXTURES, { query: "plan-1" });
+    const nodes = output as Array<{
+      id: string | null;
+      created: string | null;
+      updated: string | null;
+    }>;
+    expect(nodes.length).toBeGreaterThan(0);
+    expect(nodes[0]).toHaveProperty("created");
+    expect(nodes[0]).toHaveProperty("updated");
+    // plan-1 fixture has known dates
+    expect(nodes[0].created).toBe("2026-02-15");
+    expect(nodes[0].updated).toBe("2026-02-15");
+  });
+
   it("--limit larger than result set returns all matches", async () => {
     await searchCommand(FIXTURES, { query: "proj" });
     const total = (output as unknown[]).length;

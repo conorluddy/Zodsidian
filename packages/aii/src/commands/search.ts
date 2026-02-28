@@ -38,8 +38,13 @@ export async function searchCommand(
     const graph = new VaultGraph(index);
 
     const matched = graph.nodes().filter((node) => nodeMatchesQuery(node, options.query));
-    const results =
+    const sliced =
       options.limit !== undefined ? matched.slice(0, options.limit) : matched;
+    const results = sliced.map((node) => ({
+      ...node,
+      created: (node.frontmatter?.created as string | undefined) ?? null,
+      updated: (node.frontmatter?.updated as string | undefined) ?? null,
+    }));
     console.log(JSON.stringify(results));
   } catch (err) {
     console.error(

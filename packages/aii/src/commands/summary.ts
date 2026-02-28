@@ -20,6 +20,20 @@ export async function summaryCommand(dir: string): Promise<void> {
       .filter((e) => !index.idIndex.has(e.targetId))
       .map((e) => ({ sourceFile: e.sourceFile, targetId: e.targetId, field: e.field }));
 
+    const staleDrafts = { lt7d: 0, "7to30d": 0, "30to90d": 0, gt90d: 0 };
+    const nowMs = Date.now();
+    for (const node of nodes) {
+      if ((node.frontmatter?.status as string | undefined) !== "draft") continue;
+      const created = node.frontmatter?.created as string | undefined;
+      if (!created) continue;
+      const ageMs = nowMs - new Date(created).getTime();
+      const ageDays = ageMs / (1000 * 60 * 60 * 24);
+      if (ageDays < 7) staleDrafts.lt7d++;
+      else if (ageDays < 30) staleDrafts["7to30d"]++;
+      else if (ageDays < 90) staleDrafts["30to90d"]++;
+      else staleDrafts.gt90d++;
+    }
+
     console.log(
       JSON.stringify({
         totalNodes: nodes.length,
@@ -27,6 +41,7 @@ export async function summaryCommand(dir: string): Promise<void> {
         totalEdges: index.edges.length,
         brokenRefs,
         typeDistribution,
+        staleDrafts,
       }),
     );
   } catch (err) {
