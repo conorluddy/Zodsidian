@@ -5,10 +5,11 @@ import {
   buildVaultIndex,
   validateVault,
   IssueCode,
+  type ValidationIssue,
 } from "@zodsidian/core";
 import { walkMarkdownFiles, filterByType } from "../utils/walk.js";
 import { loadConfigForVault } from "../utils/config-loader.js";
-import { printIssue, printSummary } from "../output/console-formatter.js";
+import { printIssue, printSummary, printJson } from "../output/console-formatter.js";
 import {
   EXIT_SUCCESS,
   EXIT_VALIDATION_ERROR,
@@ -18,6 +19,22 @@ import {
 interface ValidateCommandOptions {
   type?: string;
   config?: string;
+  json?: boolean;
+}
+
+interface FileValidationResult {
+  isValid: boolean;
+  issues: ValidationIssue[];
+}
+
+interface ValidateJsonOutput {
+  stats: {
+    totalFiles: number;
+    validFiles: number;
+    errorCount: number;
+    warningCount: number;
+  };
+  files: Record<string, FileValidationResult>;
 }
 
 export async function validateCommand(
@@ -36,6 +53,63 @@ export async function validateCommand(
     const vaultResult = validateVault(index);
 
     let hasErrors = index.stats.errorCount > 0;
+
+    if (options.json) {
+      const fileResults: Record<string, FileValidationResult> = {};
+
+      for (const [filePath, node] of index.files) {
+        if (!node.isValid) {
+          const content = contentByPath.get(filePath);
+          if (content === undefined) continue;
+
+          const issues: ValidationIssue[] =
+            content === ""
+              ? [
+                  {
+                    severity: "error",
+                    code: IssueCode.FM_MISSING,
+                    message: "No frontmatter found",
+                  },
+                ]
+              : (() => {
+                  const parsed = parseFrontmatter(content);
+                  return parsed.data
+                    ? [
+                        ...parsed.issues,
+                        ...validateFrontmatter(
+                          parsed.data as Record<string, unknown>,
+                          config,
+                        ),
+                      ]
+                    : parsed.issues;
+                })();
+
+          fileResults[filePath] = { isValid: false, issues };
+        }
+      }
+
+      for (const [filePath, issues] of vaultResult.issues) {
+        if (issues.some((i) => i.severity === "error")) hasErrors = true;
+        const existing = fileResults[filePath];
+        if (existing) {
+          existing.issues.push(...issues);
+        } else {
+          fileResults[filePath] = { isValid: false, issues };
+        }
+      }
+
+      const output: ValidateJsonOutput = {
+        stats: {
+          totalFiles: index.stats.totalFiles,
+          validFiles: index.stats.validFiles,
+          errorCount: index.stats.errorCount,
+          warningCount: index.stats.warningCount,
+        },
+        files: fileResults,
+      };
+      printJson(output);
+      process.exit(hasErrors ? EXIT_VALIDATION_ERROR : EXIT_SUCCESS);
+    }
 
     for (const [filePath, node] of index.files) {
       if (!node.isValid) {
