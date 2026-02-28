@@ -50,8 +50,9 @@ program
 program
   .command("search <dir>")
   .description("Search nodes by title, id, type, or status")
-  .requiredOption("--q <text>", "Search query (case-insensitive substring)")
+  .requiredOption("-q, --query <text>", "Search query (case-insensitive substring)")
   .option("--type <type>", "Restrict search to a specific document type")
+  .option("--limit <n>", "Maximum number of results to return", parseInt)
   .action(searchCommand);
 
 program

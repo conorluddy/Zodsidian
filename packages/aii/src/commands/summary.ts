@@ -9,8 +9,9 @@ export async function summaryCommand(dir: string): Promise<void> {
     const index = buildVaultIndex(files);
     const graph = new VaultGraph(index);
 
+    const nodes = graph.nodes();
     const typeDistribution: Record<string, number> = {};
-    for (const node of graph.nodes()) {
+    for (const node of nodes) {
       const key = node.type ?? "untyped";
       typeDistribution[key] = (typeDistribution[key] ?? 0) + 1;
     }
@@ -21,7 +22,7 @@ export async function summaryCommand(dir: string): Promise<void> {
 
     console.log(
       JSON.stringify({
-        totalNodes: index.stats.totalFiles,
+        totalNodes: nodes.length,
         validNodes: index.stats.validFiles,
         totalEdges: index.edges.length,
         brokenRefs,

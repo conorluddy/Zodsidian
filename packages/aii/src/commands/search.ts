@@ -3,8 +3,9 @@ import { walkMarkdownFiles, filterByType } from "../utils/walk.js";
 import { EXIT_RUNTIME_ERROR } from "../utils/exit-codes.js";
 
 interface SearchCommandOptions {
-  q: string;
+  query: string;
   type?: string;
+  limit?: number;
 }
 
 function nodeMatchesQuery(
@@ -36,7 +37,9 @@ export async function searchCommand(
     const index = buildVaultIndex(files);
     const graph = new VaultGraph(index);
 
-    const results = graph.nodes().filter((node) => nodeMatchesQuery(node, options.q));
+    const matched = graph.nodes().filter((node) => nodeMatchesQuery(node, options.query));
+    const results =
+      options.limit !== undefined ? matched.slice(0, options.limit) : matched;
     console.log(JSON.stringify(results));
   } catch (err) {
     console.error(
