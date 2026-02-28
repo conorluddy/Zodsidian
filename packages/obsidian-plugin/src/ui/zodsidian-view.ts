@@ -3,6 +3,7 @@ import { IssueCode, type ValidationIssue } from "@zodsidian/core";
 import { getRegisteredTypes } from "@zodsidian/core";
 import type { VaultReport } from "../services/report-service.js";
 import { TypeFilesModal } from "./type-files-modal.js";
+import type { FileContext } from "../types/file-context.js";
 
 export const ZODSIDIAN_VIEW_TYPE = "zodsidian-main";
 
@@ -10,10 +11,16 @@ interface FileState {
   filePath: string | null;
   issues: ValidationIssue[];
   isTyped: boolean;
+  context: FileContext | null;
 }
 
 export class ZodsidianView extends ItemView {
-  private fileState: FileState = { filePath: null, issues: [], isTyped: false };
+  private fileState: FileState = {
+    filePath: null,
+    issues: [],
+    isTyped: false,
+    context: null,
+  };
   private report: VaultReport | null = null;
   private fileSectionEl!: HTMLElement;
   private vaultSectionEl!: HTMLElement;
@@ -31,6 +38,7 @@ export class ZodsidianView extends ItemView {
     private onFixVault: () => Promise<void>,
     private onMapType: (unknownType: string) => void,
     private onOpened: () => void,
+    private onNavigate: (filePath: string) => void,
   ) {
     super(leaf);
   }
@@ -47,14 +55,19 @@ export class ZodsidianView extends ItemView {
     return "shield-check";
   }
 
-  setFileResult(filePath: string, issues: ValidationIssue[], isTyped: boolean): void {
-    this.fileState = { filePath, issues, isTyped };
+  setFileResult(
+    filePath: string,
+    issues: ValidationIssue[],
+    isTyped: boolean,
+    context?: FileContext | null,
+  ): void {
+    this.fileState = { filePath, issues, isTyped, context: context ?? null };
     this.activateTab("file");
     this.renderFileSection();
   }
 
   clearFile(): void {
-    this.fileState = { filePath: null, issues: [], isTyped: false };
+    this.fileState = { filePath: null, issues: [], isTyped: false, context: null };
     this.renderFileSection();
   }
 
@@ -130,27 +143,105 @@ export class ZodsidianView extends ItemView {
       return;
     }
 
-    if (this.fileState.issues.length === 0) {
-      const empty = panel.createDiv({ cls: "zodsidian-empty" });
-      const icon = empty.createSpan({ cls: "zodsidian-severity-icon" });
-      setIcon(icon, "check-circle");
-      empty.createSpan({ text: " No issues found" });
-      return;
+    // Context card for typed files
+    if (this.fileState.context) {
+      this.renderContextCard(panel, this.fileState.context);
     }
 
+    // Issues section
     const errors = this.fileState.issues.filter((i) => i.severity === "error");
     const warnings = this.fileState.issues.filter((i) => i.severity === "warning");
 
-    const filePath = this.fileState.filePath;
-    const actionBar = panel.createDiv({ cls: "zodsidian-action-bar" });
-    const fixBtn = actionBar.createEl("button", {
-      text: "Fix",
-      cls: "zodsidian-fix-btn",
-    });
-    fixBtn.addEventListener("click", () => this.onFix(filePath));
+    if (errors.length > 0 || warnings.length > 0) {
+      const filePath = this.fileState.filePath;
+      const actionBar = panel.createDiv({ cls: "zodsidian-action-bar" });
+      const fixBtn = actionBar.createEl("button", {
+        text: "Fix",
+        cls: "zodsidian-fix-btn",
+      });
+      fixBtn.addEventListener("click", () => this.onFix(filePath));
 
-    for (const issue of [...errors, ...warnings]) {
-      this.renderIssue(panel, issue, filePath);
+      for (const issue of [...errors, ...warnings]) {
+        this.renderIssue(panel, issue, filePath);
+      }
+    }
+  }
+
+  private renderContextCard(parent: HTMLElement, ctx: FileContext): void {
+    const card = parent.createDiv({ cls: "zodsidian-context-card" });
+
+    // Header: type badge + valid indicator
+    const header = card.createDiv({ cls: "zodsidian-context-header" });
+    header.createSpan({ cls: "zodsidian-type-badge", text: ctx.type });
+    if (this.fileState.issues.length === 0) {
+      const validIcon = header.createSpan({ cls: "zodsidian-context-valid" });
+      setIcon(validIcon, "check-circle");
+    }
+
+    // Key frontmatter fields
+    if (ctx.fields.length > 0) {
+      const fieldsEl = card.createDiv({ cls: "zodsidian-context-fields" });
+      for (const field of ctx.fields) {
+        const row = fieldsEl.createDiv({ cls: "zodsidian-context-field" });
+        row.createSpan({ cls: "zodsidian-context-field-key", text: field.key });
+        row.createSpan({
+          cls: "zodsidian-context-field-value",
+          text: formatFieldValue(field.value),
+        });
+      }
+    }
+
+    // Outgoing references (grouped by field)
+    if (ctx.outgoing.length > 0 || (!ctx.graphReady && ctx.outgoing.length === 0)) {
+      const refsEl = card.createDiv({ cls: "zodsidian-context-refs" });
+
+      if (ctx.outgoing.length > 0) {
+        for (const group of ctx.outgoing) {
+          const groupEl = refsEl.createDiv({ cls: "zodsidian-ref-group" });
+          groupEl.createDiv({ cls: "zodsidian-ref-label", text: group.fieldName });
+          const list = groupEl.createDiv({ cls: "zodsidian-ref-list" });
+          for (const target of group.targets) {
+            if (target.filePath) {
+              const link = list.createEl("button", {
+                cls: "zodsidian-ref-link",
+                text: target.title ?? target.id,
+              });
+              link.addEventListener("click", () => this.onNavigate(target.filePath!));
+            } else {
+              list.createSpan({
+                cls: "zodsidian-ref-dangling",
+                text: target.id,
+              });
+            }
+          }
+        }
+      }
+
+      if (!ctx.graphReady) {
+        refsEl.createDiv({ cls: "zodsidian-context-pending", text: "Scan pending..." });
+      }
+    }
+
+    // Incoming references
+    if (ctx.incoming.length > 0) {
+      const refsEl = card.createDiv({ cls: "zodsidian-context-refs" });
+      const groupEl = refsEl.createDiv({ cls: "zodsidian-ref-group" });
+      groupEl.createDiv({ cls: "zodsidian-ref-label", text: "Referenced by" });
+      const list = groupEl.createDiv({ cls: "zodsidian-ref-list" });
+      for (const ref of ctx.incoming) {
+        const link = list.createEl("button", { cls: "zodsidian-ref-link" });
+        link.createSpan({ text: ref.sourceTitle ?? ref.sourceFilePath });
+        if (ref.sourceType) {
+          link.createSpan({ cls: "zodsidian-ref-type-hint", text: ref.sourceType });
+        }
+        link.addEventListener("click", () => this.onNavigate(ref.sourceFilePath));
+      }
+    } else if (!ctx.graphReady) {
+      // Show pending only if no outgoing refs section already showed it
+      if (ctx.outgoing.length === 0) {
+        const pending = card.createDiv({ cls: "zodsidian-context-refs" });
+        pending.createDiv({ cls: "zodsidian-context-pending", text: "Scan pending..." });
+      }
     }
   }
 
@@ -345,6 +436,12 @@ interface FixAction {
  * Maps a ValidationIssue to an auto-fix action, or returns null when the
  * issue cannot be resolved automatically.
  */
+function formatFieldValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (Array.isArray(value)) return value.map(String).join(", ");
+  return String(value);
+}
+
 function getFixAction(issue: ValidationIssue): FixAction | null {
   switch (issue.code) {
     case IssueCode.FM_UNKNOWN_KEY:

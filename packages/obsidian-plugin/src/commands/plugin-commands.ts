@@ -2,6 +2,7 @@ import { Notice } from "obsidian";
 import type ZodsidianPlugin from "../main.js";
 import { getRegisteredTypes, type ValidationIssue } from "@zodsidian/core";
 import { ZODSIDIAN_VIEW_TYPE, ZodsidianView } from "../ui/zodsidian-view.js";
+import type { FileContext } from "../types/file-context.js";
 
 export function registerCommands(plugin: ZodsidianPlugin): void {
   plugin.addCommand({
@@ -10,8 +11,8 @@ export function registerCommands(plugin: ZodsidianPlugin): void {
     editorCallback: async (_editor, ctx) => {
       if (!ctx.file) return;
       const result = await plugin.validationService.validateFile(ctx.file);
-
-      updatePanel(plugin, ctx.file.path, result.issues, result.isTyped);
+      const fileCtx = plugin.buildFileContext(ctx.file.path, result);
+      updatePanel(plugin, ctx.file.path, result.issues, result.isTyped, fileCtx);
 
       if (result.issues.length === 0) {
         new Notice("Zodsidian: No issues found.");
@@ -40,7 +41,8 @@ export function registerCommands(plugin: ZodsidianPlugin): void {
       if (activeFile) {
         const cached = plugin.validationService.getCachedResult(activeFile.path);
         if (cached) {
-          updatePanel(plugin, activeFile.path, cached.issues, cached.isTyped);
+          const fileCtx = plugin.buildFileContext(activeFile.path, cached);
+          updatePanel(plugin, activeFile.path, cached.issues, cached.isTyped, fileCtx);
         }
       }
 
@@ -91,7 +93,8 @@ export async function revealPanel(plugin: ZodsidianPlugin): Promise<void> {
   const activeFile = plugin.app.workspace.getActiveFile();
   if (activeFile?.path.endsWith(".md")) {
     const result = await plugin.validationService.validateFile(activeFile);
-    updatePanel(plugin, activeFile.path, result.issues, result.isTyped);
+    const fileCtx = plugin.buildFileContext(activeFile.path, result);
+    updatePanel(plugin, activeFile.path, result.issues, result.isTyped, fileCtx);
   }
   const report = await plugin.reportService.buildReport();
   setReportInPanel(plugin, report);
@@ -102,12 +105,13 @@ export function updatePanel(
   filePath: string,
   issues: ValidationIssue[],
   isTyped: boolean,
+  context?: FileContext | null,
 ): void {
   const leaf = plugin.app.workspace.getLeavesOfType(ZODSIDIAN_VIEW_TYPE)[0];
   if (!leaf) return;
   const view = leaf.view;
   if (view instanceof ZodsidianView) {
-    view.setFileResult(filePath, issues, isTyped);
+    view.setFileResult(filePath, issues, isTyped, context ?? null);
   }
 }
 
