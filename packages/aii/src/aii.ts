@@ -3,6 +3,8 @@ import { validateCommand } from "./commands/validate.js";
 import { fixCommand } from "./commands/fix.js";
 import { queryCommand } from "./commands/query.js";
 import { schemaCommand } from "./commands/schema.js";
+import { searchCommand } from "./commands/search.js";
+import { summaryCommand } from "./commands/summary.js";
 
 const collect = (val: string, prev: string[]) => [...prev, val];
 
@@ -42,7 +44,20 @@ program
   .description("Query the vault graph; nodes always include frontmatter")
   .option("--type <type>", "Filter nodes by schema type")
   .option("--id <id>", "Look up a single node by id (returns node + refs)")
+  .option("--depth <n>", "Multi-hop subgraph depth when used with --id", parseInt)
   .action(queryCommand);
+
+program
+  .command("search <dir>")
+  .description("Search nodes by title, id, type, or status")
+  .requiredOption("--q <text>", "Search query (case-insensitive substring)")
+  .option("--type <type>", "Restrict search to a specific document type")
+  .action(searchCommand);
+
+program
+  .command("summary <dir>")
+  .description("Vault overview: node counts, type distribution, edge stats, broken refs")
+  .action(summaryCommand);
 
 program
   .command("schema [type]")

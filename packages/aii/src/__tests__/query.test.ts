@@ -49,4 +49,47 @@ describe("aii query", () => {
     expect(result.node.frontmatter).toBeDefined();
     expect(result.node.frontmatter?.id).toBe("proj-1");
   });
+
+  it("--depth returns subgraph shape instead of node+refs", async () => {
+    await queryCommand(FIXTURES, { id: "proj-1", depth: 1 });
+    const result = output as {
+      root: string;
+      depth: number;
+      nodes: unknown[];
+      edges: unknown[];
+    };
+    expect(result.root).toBe("proj-1");
+    expect(result.depth).toBe(1);
+    expect(Array.isArray(result.nodes)).toBe(true);
+    expect(Array.isArray(result.edges)).toBe(true);
+  });
+
+  it("--depth subgraph includes the root node", async () => {
+    await queryCommand(FIXTURES, { id: "proj-1", depth: 1 });
+    const result = output as { nodes: Array<{ id: string | null }> };
+    expect(result.nodes.some((n) => n.id === "proj-1")).toBe(true);
+  });
+
+  it("--depth 2 includes nodes reachable in 2 hops", async () => {
+    await queryCommand(FIXTURES, { id: "proj-1", depth: 2 });
+    const result = output as { nodes: Array<{ id: string | null }>; depth: number };
+    expect(result.depth).toBe(2);
+    expect(result.nodes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("--depth 0 returns only the root node", async () => {
+    await queryCommand(FIXTURES, { id: "proj-1", depth: 0 });
+    const result = output as { nodes: Array<{ id: string | null }> };
+    expect(result.nodes.length).toBe(1);
+    expect(result.nodes[0].id).toBe("proj-1");
+  });
+
+  it("omitting --depth preserves existing node+refs output (no breaking change)", async () => {
+    await queryCommand(FIXTURES, { id: "proj-1" });
+    const result = output as Record<string, unknown>;
+    expect(result).toHaveProperty("node");
+    expect(result).toHaveProperty("incoming");
+    expect(result).toHaveProperty("outgoing");
+    expect(result).not.toHaveProperty("root");
+  });
 });
