@@ -13,6 +13,10 @@ import type { ConfigService } from "./config-service.js";
 export interface ValidationResult {
   issues: ValidationIssue[];
   isTyped: boolean;
+  type?: string;
+  id?: string;
+  title?: string;
+  frontmatter?: Record<string, unknown>;
 }
 
 export class ValidationService {
@@ -44,7 +48,14 @@ export class ValidationService {
 
     const schemaIssues = validateFrontmatter(data, config);
     const allIssues = [...parsed.issues, ...schemaIssues];
-    const result: ValidationResult = { issues: allIssues, isTyped };
+    const result: ValidationResult = {
+      issues: allIssues,
+      isTyped,
+      type: canonicalType ?? undefined,
+      id: typeof data.id === "string" ? data.id : undefined,
+      title: typeof data.title === "string" ? data.title : undefined,
+      frontmatter: isTyped ? data : undefined,
+    };
     this.cache.set(file.path, result);
     return result;
   }

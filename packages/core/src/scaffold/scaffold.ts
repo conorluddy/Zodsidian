@@ -51,7 +51,9 @@ export function scaffold(
     }
   }
 
-  const yaml = stringifyFrontmatter(ordered);
+  const yaml = stringifyFrontmatter(ordered, {
+    referenceFields: entry.referenceFields,
+  });
   const content = `---\n${yaml}\n---\n`;
 
   return { ok: true, value: { content, type: typeName } };

@@ -90,6 +90,28 @@ describe("scaffold", () => {
     expect(issues).toHaveLength(0);
   });
 
+  it("wraps project overrides in [[wiki-links]] and re-parses to plain IDs", () => {
+    const result = scaffold("decision", {
+      overrides: {
+        id: "dec-wl",
+        title: "Wiki Link Test",
+        projects: ["proj-1", "proj-2"],
+        decisionDate: "2026-02-20",
+        outcome: "Approved",
+      },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.content).toContain("[[proj-1]]");
+    expect(result.value.content).toContain("[[proj-2]]");
+
+    // Re-parse should strip back to plain IDs
+    const parsed = parseFrontmatter(result.value.content);
+    const data = parsed.data as Record<string, unknown>;
+    expect(data["projects"]).toEqual(["proj-1", "proj-2"]);
+  });
+
   it("orders plan keys according to schema definition", () => {
     const result = scaffold("plan", {
       overrides: { id: "plan-ord", title: "Ordered Plan" },

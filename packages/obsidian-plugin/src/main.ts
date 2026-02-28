@@ -3,12 +3,15 @@ import type { ValidationIssue } from "@zodsidian/core";
 import {
   applyFixes,
   getRegisteredTypes,
+  getSchemaEntry,
   inferIdFromTitle,
   inferIdFromPath,
   inferTitleFromPath,
   populateMissingFields,
   type FixStrategy,
 } from "@zodsidian/core";
+import type { FileContext } from "./types/file-context.js";
+import type { ValidationResult } from "./services/validation-service.js";
 import { DEFAULT_SETTINGS, type ZodsidianSettings } from "./settings/settings.js";
 import { ZodsidianSettingTab } from "./settings/settings-tab.js";
 import { VaultAdapter } from "./services/vault-adapter.js";
@@ -59,6 +62,12 @@ export default class ZodsidianPlugin extends Plugin {
           () => {
             this.refreshReport();
           },
+          async (filePath) => {
+            const file = this.app.vault.getAbstractFileByPath(filePath);
+            if (file instanceof TFile) {
+              await this.app.workspace.getLeaf().openFile(file);
+            }
+          },
         ),
     );
 
@@ -85,7 +94,8 @@ export default class ZodsidianPlugin extends Plugin {
             const warnings = result.issues.filter((i) => i.severity === "warning").length;
             this.statusBar.update(errors, warnings);
           }
-          this.updateView(file.path, result.issues, result.isTyped);
+          const ctx = this.buildFileContext(file.path, result);
+          this.updateView(file.path, result.issues, result.isTyped, ctx);
         });
       }),
     );
@@ -111,7 +121,8 @@ export default class ZodsidianPlugin extends Plugin {
             const warnings = result.issues.filter((i) => i.severity === "warning").length;
             this.statusBar.update(errors, warnings);
           }
-          this.updateView(file.path, result.issues, result.isTyped);
+          const ctx = this.buildFileContext(file.path, result);
+          this.updateView(file.path, result.issues, result.isTyped, ctx);
         });
       }),
     );
@@ -139,10 +150,13 @@ export default class ZodsidianPlugin extends Plugin {
 
     // If panel is already open (persisted by Obsidian), validate active file into it
     this.app.workspace.onLayoutReady(() => {
+      this.registerReferenceFieldTypes();
+
       const activeFile = this.app.workspace.getActiveFile();
       if (activeFile?.path.endsWith(".md") && this.getPanel()) {
         this.validationService.validateFile(activeFile).then((result) => {
-          this.updateView(activeFile.path, result.issues, result.isTyped);
+          const ctx = this.buildFileContext(activeFile.path, result);
+          this.updateView(activeFile.path, result.issues, result.isTyped, ctx);
         });
       }
 
@@ -178,7 +192,8 @@ export default class ZodsidianPlugin extends Plugin {
       const errors = result.issues.filter((i) => i.severity === "error").length;
       const warnings = result.issues.filter((i) => i.severity === "warning").length;
       this.statusBar.update(errors, warnings);
-      this.updateView(filePath, result.issues, result.isTyped);
+      const ctx = this.buildFileContext(filePath, result);
+      this.updateView(filePath, result.issues, result.isTyped, ctx);
     } catch (err) {
       new Notice(
         `Conversion failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -223,7 +238,8 @@ export default class ZodsidianPlugin extends Plugin {
       validation.isTyped
         ? this.statusBar.update(errors, warnings)
         : this.statusBar.clear();
-      this.updateView(filePath, validation.issues, validation.isTyped);
+      const ctx = this.buildFileContext(filePath, validation);
+      this.updateView(filePath, validation.issues, validation.isTyped, ctx);
     } catch (err) {
       new Notice(`Fix failed: ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -254,7 +270,8 @@ export default class ZodsidianPlugin extends Plugin {
       validation.isTyped
         ? this.statusBar.update(errors, warnings)
         : this.statusBar.clear();
-      this.updateView(activeFile.path, validation.issues, validation.isTyped);
+      const ctx = this.buildFileContext(activeFile.path, validation);
+      this.updateView(activeFile.path, validation.issues, validation.isTyped, ctx);
     }
   }
 
@@ -269,13 +286,105 @@ export default class ZodsidianPlugin extends Plugin {
     filePath: string | null,
     issues?: ValidationIssue[],
     isTyped?: boolean,
+    context?: FileContext | null,
   ): void {
     const panel = this.getPanel();
     if (!panel) return;
     if (!filePath) {
       panel.clearFile();
     } else {
-      panel.setFileResult(filePath, issues ?? [], isTyped ?? false);
+      panel.setFileResult(filePath, issues ?? [], isTyped ?? false, context ?? null);
+    }
+  }
+
+  buildFileContext(filePath: string, result: ValidationResult): FileContext | null {
+    if (!result.isTyped || !result.type) return null;
+
+    const graph = this.reportService.getGraph();
+    const index = this.reportService.getIndex();
+    const graphReady = graph !== null && index !== null;
+
+    // Collect outgoing references grouped by field
+    const outgoing: FileContext["outgoing"] = [];
+    if (graphReady) {
+      const edges = graph.referencesFrom(filePath);
+      const grouped = new Map<string, typeof edges>();
+      for (const edge of edges) {
+        const group = grouped.get(edge.field) ?? [];
+        group.push(edge);
+        grouped.set(edge.field, group);
+      }
+      for (const [fieldName, fieldEdges] of grouped) {
+        outgoing.push({
+          fieldName,
+          targets: fieldEdges.map((e) => {
+            const target = graph.nodeById(e.targetId);
+            return {
+              id: e.targetId,
+              title: target?.title ?? null,
+              type: target?.type ?? null,
+              filePath: target?.filePath ?? null,
+            };
+          }),
+        });
+      }
+    }
+
+    // Collect incoming references
+    const incoming: FileContext["incoming"] = [];
+    if (graphReady && result.id) {
+      for (const edge of graph.referencesTo(result.id)) {
+        const sourceNode = index.files.get(edge.sourceFile);
+        incoming.push({
+          sourceFilePath: edge.sourceFile,
+          sourceTitle: sourceNode?.title ?? null,
+          sourceType: sourceNode?.type ?? null,
+          field: edge.field,
+        });
+      }
+    }
+
+    // Extract key frontmatter fields (exclude structural fields and reference fields)
+    const fields: FileContext["fields"] = [];
+    if (result.frontmatter) {
+      const entry = getSchemaEntry(result.type);
+      const refFields = new Set(entry?.referenceFields ?? []);
+      const skipKeys = new Set(["type", "id", "title", "tags", ...refFields]);
+      for (const [key, value] of Object.entries(result.frontmatter)) {
+        if (!skipKeys.has(key)) {
+          fields.push({ key, value });
+        }
+      }
+    }
+
+    return {
+      type: result.type,
+      id: result.id ?? null,
+      title: result.title ?? null,
+      outgoing,
+      incoming,
+      fields,
+      graphReady,
+    };
+  }
+
+  /** Tell Obsidian to render reference fields as multitext (clickable links). */
+  private registerReferenceFieldTypes(): void {
+    const mgr = (this.app as Record<string, unknown>).metadataTypeManager as
+      | { setType(name: string, type: string): void }
+      | undefined;
+    if (!mgr) return;
+
+    const fields = new Set<string>();
+    for (const type of getRegisteredTypes()) {
+      const entry = getSchemaEntry(type);
+      if (entry?.referenceFields) {
+        for (const f of entry.referenceFields) fields.add(f);
+      }
+    }
+
+    for (const field of fields) {
+      mgr.setType(field, "multitext");
     }
   }
 
@@ -296,6 +405,9 @@ export default class ZodsidianPlugin extends Plugin {
       // Populate vault section if panel is already open
       const panel = this.getPanel();
       if (panel) panel.setReport(report);
+
+      // Re-push file context now that graph is available
+      this.refreshActiveFileContext();
     } catch (err) {
       console.error("Zodsidian background scan failed:", err);
     }
@@ -306,8 +418,20 @@ export default class ZodsidianPlugin extends Plugin {
       const report = await this.reportService.buildReport();
       const panel = this.getPanel();
       if (panel) panel.setReport(report);
+
+      // Re-push file context with updated graph
+      this.refreshActiveFileContext();
     } catch (err) {
       console.error("Zodsidian report refresh failed:", err);
     }
+  }
+
+  private refreshActiveFileContext(): void {
+    const activeFile = this.app.workspace.getActiveFile();
+    if (!activeFile?.path.endsWith(".md")) return;
+    const cached = this.validationService.getCachedResult(activeFile.path);
+    if (!cached) return;
+    const ctx = this.buildFileContext(activeFile.path, cached);
+    this.updateView(activeFile.path, cached.issues, cached.isTyped, ctx);
   }
 }

@@ -58,6 +58,59 @@ Body after empty frontmatter`;
     expect(result.body).toBe(body);
   });
 
+  it("strips [[wiki-links]] from array values", () => {
+    const content = `---
+type: decision
+id: dec-1
+title: Test
+projects:
+  - "[[proj-1]]"
+  - "[[proj-2]]"
+---`;
+    const result = parseFrontmatter(content);
+    expect(result.isValid).toBe(true);
+    const data = result.data as Record<string, unknown>;
+    expect(data["projects"]).toEqual(["proj-1", "proj-2"]);
+  });
+
+  it("strips [[wiki-links]] from scalar values", () => {
+    const content = `---
+type: project
+id: "[[proj-1]]"
+title: Test
+status: active
+---`;
+    const result = parseFrontmatter(content);
+    expect(result.isValid).toBe(true);
+    const data = result.data as Record<string, unknown>;
+    expect(data["id"]).toBe("proj-1");
+  });
+
+  it("leaves partial brackets in titles untouched", () => {
+    const content = `---
+type: project
+id: proj-1
+title: "Array notation [example]"
+status: active
+---`;
+    const result = parseFrontmatter(content);
+    const data = result.data as Record<string, unknown>;
+    expect(data["title"]).toBe("Array notation [example]");
+  });
+
+  it("leaves plain strings untouched by wiki-link normalization", () => {
+    const content = `---
+type: project
+id: proj-1
+title: Plain Title
+status: active
+---`;
+    const result = parseFrontmatter(content);
+    const data = result.data as Record<string, unknown>;
+    expect(data["id"]).toBe("proj-1");
+    expect(data["title"]).toBe("Plain Title");
+  });
+
   it("normalizes YAML 1.1 Date objects to YYYY-MM-DD strings", () => {
     // gray-matter (YAML 1.1) parses unquoted dates as Date objects.
     // Obsidian writes dates without quotes, so we must coerce them on read.

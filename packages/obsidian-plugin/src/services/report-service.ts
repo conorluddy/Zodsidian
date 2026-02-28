@@ -1,5 +1,5 @@
 import type { VaultIndex, VaultStats } from "@zodsidian/core";
-import { buildVaultIndex, getRegisteredTypes } from "@zodsidian/core";
+import { buildVaultIndex, getRegisteredTypes, VaultGraph } from "@zodsidian/core";
 import type { VaultAdapter } from "./vault-adapter.js";
 import type { ConfigService } from "./config-service.js";
 
@@ -25,10 +25,21 @@ export interface VaultReport {
  * Builds vault-wide reports by scanning all markdown files
  */
 export class ReportService {
+  private graph: VaultGraph | null = null;
+  private index: VaultIndex | null = null;
+
   constructor(
     private vaultAdapter: VaultAdapter,
     private configService: ConfigService,
   ) {}
+
+  getGraph(): VaultGraph | null {
+    return this.graph;
+  }
+
+  getIndex(): VaultIndex | null {
+    return this.index;
+  }
 
   /**
    * Build a full vault report including stats, type breakdown, and unknown types
@@ -43,6 +54,8 @@ export class ReportService {
       })),
     );
     const index = buildVaultIndex(files, config);
+    this.index = index;
+    this.graph = new VaultGraph(index);
 
     const { breakdown, unknownTypes, typeFiles } = this.getTypeData(index);
     const activeMappings = config.typeMappings ?? {};
