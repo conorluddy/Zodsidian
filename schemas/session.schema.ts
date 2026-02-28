@@ -7,7 +7,7 @@ export const sessionSchema = z
     id: z
       .string()
       .min(1)
-      .describe("Unique session identifier (e.g. session-conorfyi-phone-mockup)"),
+      .describe("Unique session identifier (e.g. session-proj-auth-refactor)"),
     title: z.string().min(1).describe("Human-readable session title"),
     date: z.string().date().describe("ISO date the session took place"),
     ...baseFields,
