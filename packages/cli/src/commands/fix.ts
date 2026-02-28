@@ -28,7 +28,7 @@ export async function fixCommand(dir: string, options: FixCommandOptions): Promi
   try {
     loadSchemas();
     const config = await loadConfigForVault(dir, options.config);
-    let files = await walkMarkdownFiles(dir);
+    let files = await walkMarkdownFiles(dir, config.excludeGlobs);
     if (options.type) {
       files = filterByType(files, options.type);
     }

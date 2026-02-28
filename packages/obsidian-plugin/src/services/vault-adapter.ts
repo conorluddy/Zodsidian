@@ -1,4 +1,5 @@
 import type { App, TFile } from "obsidian";
+import { shouldExcludeFile } from "@zodsidian/core";
 
 export class VaultAdapter {
   constructor(private app: App) {}
@@ -11,7 +12,9 @@ export class VaultAdapter {
     await this.app.vault.modify(file, content);
   }
 
-  getMarkdownFiles(): TFile[] {
-    return this.app.vault.getMarkdownFiles();
+  getMarkdownFiles(excludeGlobs?: string[]): TFile[] {
+    const all = this.app.vault.getMarkdownFiles();
+    if (!excludeGlobs || excludeGlobs.length === 0) return all;
+    return all.filter((file) => !shouldExcludeFile(file.path, excludeGlobs));
   }
 }

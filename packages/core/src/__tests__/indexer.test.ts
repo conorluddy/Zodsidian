@@ -19,7 +19,11 @@ describe("buildVaultIndex", () => {
 type: project
 id: proj-alpha
 title: Alpha
+summary: A test project document created for validation purposes with all required fields present to ensure schema passes cleanly.
 status: active
+created: "2026-01-01"
+updated: "2026-01-15"
+summarisedAt: "2026-01-15"
 ---`,
       },
       {
@@ -28,10 +32,14 @@ status: active
 type: decision
 id: dec-1
 title: Use Zod
+summary: A test decision document created for validation purposes with all required fields present to ensure schema passes cleanly.
 decisionDate: "2026-01-15"
 outcome: Approved
 projects:
   - proj-alpha
+created: "2026-01-01"
+updated: "2026-01-15"
+summarisedAt: "2026-01-15"
 ---`,
       },
     ];

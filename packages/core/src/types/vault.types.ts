@@ -1,3 +1,5 @@
+import type { ValidationIssue } from "./validation.types.js";
+
 export interface FileNode {
   filePath: string;
   type: string | null;
@@ -6,6 +8,7 @@ export interface FileNode {
   isValid: boolean;
   errorCount: number;
   warningCount: number;
+  issues: ValidationIssue[];
   /** Parsed frontmatter data. Present for typed files (has a `type` field), undefined for plain notes. */
   frontmatter?: Record<string, unknown>;
 }

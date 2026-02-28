@@ -10,6 +10,7 @@ Core is designed to return structured data (typed objects, arrays, maps) — nev
 - [Architecture](#architecture)
 - [Pipeline](#pipeline)
 - [Module Guide](#module-guide)
+  - [Config](#config)
   - [Schema](#schema)
   - [Parser](#parser)
   - [Validator](#validator)
@@ -184,6 +185,37 @@ const result = applyFixes(filePath, { unsafe: false, write: true });
 ```
 
 ## Module Guide
+
+### Config
+
+**Location:** `src/config/`
+
+**Purpose:** Load, parse, and validate `zodsidian.config.json`. Provides type mappings, `excludeGlobs`, and validation settings.
+
+**Key Files:**
+
+- `config.types.ts` — Zod schema + `ZodsidianConfig` type + `defaultConfig`
+- `load-config.ts` — Async/sync config file loading with auto-discovery
+- `resolve-type.ts` — Resolves user-defined types to canonical schema types
+- `exclude-globs.ts` — `shouldExcludeFile(relativePath, excludeGlobs)` helper
+
+**`shouldExcludeFile` API:**
+
+```typescript
+import { shouldExcludeFile } from "@zodsidian/core";
+
+// Returns true if the path matches any of the glob patterns
+shouldExcludeFile("_templates/note.md", ["_templates/**"]); // → true
+shouldExcludeFile("projects/my-project.md", ["_templates/**"]); // → false
+shouldExcludeFile("anything.md", []); // → false (empty globs = exclude nothing)
+```
+
+**Gotchas:**
+
+- Directory-level patterns (e.g. `_templates/**`) also match the bare directory path (`_templates`) because `**` matches zero or more path segments. This has no practical effect since the walker only passes `.md` file paths, not directory names.
+- Config is auto-discovered: `.zodsidian.json` first, then `zodsidian.config.json`.
+
+---
 
 ### Schema
 

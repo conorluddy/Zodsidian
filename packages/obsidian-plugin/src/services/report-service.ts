@@ -1,4 +1,4 @@
-import type { VaultIndex, VaultStats } from "@zodsidian/core";
+import type { VaultIndex, VaultStats, ValidationIssue } from "@zodsidian/core";
 import { buildVaultIndex, getRegisteredTypes, VaultGraph } from "@zodsidian/core";
 import type { VaultAdapter } from "./vault-adapter.js";
 import type { ConfigService } from "./config-service.js";
@@ -13,12 +13,21 @@ export interface TypeBreakdown {
   count: number;
 }
 
+export interface FileIssueEntry {
+  filePath: string;
+  title: string | null;
+  errorCount: number;
+  warningCount: number;
+  issues: ValidationIssue[];
+}
+
 export interface VaultReport {
   stats: VaultStats;
   typeBreakdown: TypeBreakdown[];
   unknownTypes: UnknownType[];
   activeMappings: Record<string, string>;
   typeFiles: Record<string, string[]>;
+  fileIssues: FileIssueEntry[];
 }
 
 /**
@@ -27,6 +36,7 @@ export interface VaultReport {
 export class ReportService {
   private graph: VaultGraph | null = null;
   private index: VaultIndex | null = null;
+  private report: VaultReport | null = null;
 
   constructor(
     private vaultAdapter: VaultAdapter,
@@ -41,12 +51,16 @@ export class ReportService {
     return this.index;
   }
 
+  getReport(): VaultReport | null {
+    return this.report;
+  }
+
   /**
    * Build a full vault report including stats, type breakdown, and unknown types
    */
   async buildReport(): Promise<VaultReport> {
-    const tFiles = this.vaultAdapter.getMarkdownFiles();
     const config = this.configService.getConfig();
+    const tFiles = this.vaultAdapter.getMarkdownFiles(config.excludeGlobs);
     const files = await Promise.all(
       tFiles.map(async (file) => ({
         filePath: file.path,
@@ -60,13 +74,27 @@ export class ReportService {
     const { breakdown, unknownTypes, typeFiles } = this.getTypeData(index);
     const activeMappings = config.typeMappings ?? {};
 
-    return {
+    const fileIssues: FileIssueEntry[] = Array.from(index.files.values())
+      .filter((n) => n.issues.length > 0)
+      .sort((a, b) => b.errorCount - a.errorCount || b.warningCount - a.warningCount)
+      .map(({ filePath, title, errorCount, warningCount, issues }) => ({
+        filePath,
+        title,
+        errorCount,
+        warningCount,
+        issues,
+      }));
+
+    const report: VaultReport = {
       stats: index.stats,
       typeBreakdown: breakdown,
       unknownTypes,
       activeMappings,
       typeFiles,
+      fileIssues,
     };
+    this.report = report;
+    return report;
   }
 
   /**

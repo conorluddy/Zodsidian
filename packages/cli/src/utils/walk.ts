@@ -1,19 +1,26 @@
 import { readdir, readFile } from "node:fs/promises";
-import { join, extname } from "node:path";
-import { parseFrontmatter } from "@zodsidian/core";
+import { join, extname, relative } from "node:path";
+import { parseFrontmatter, shouldExcludeFile } from "@zodsidian/core";
 
 export interface WalkedFile {
   filePath: string;
   content: string;
 }
 
-export async function walkMarkdownFiles(dir: string): Promise<WalkedFile[]> {
+export async function walkMarkdownFiles(
+  dir: string,
+  excludeGlobs?: string[],
+): Promise<WalkedFile[]> {
   const files: WalkedFile[] = [];
 
   async function walk(currentDir: string): Promise<void> {
     const entries = await readdir(currentDir, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = join(currentDir, entry.name);
+      const relativePath = relative(dir, fullPath);
+
+      if (excludeGlobs && shouldExcludeFile(relativePath, excludeGlobs)) continue;
+
       if (entry.isDirectory() && !entry.name.startsWith(".")) {
         await walk(fullPath);
       } else if (entry.isFile() && extname(entry.name) === ".md") {

@@ -39,6 +39,7 @@ export class ZodsidianView extends ItemView {
     private onMapType: (unknownType: string) => void,
     private onOpened: () => void,
     private onNavigate: (filePath: string) => void,
+    private onViewReport: () => void,
   ) {
     super(leaf);
   }
@@ -289,11 +290,22 @@ export class ZodsidianView extends ItemView {
 
     const body = el.createDiv({ cls: "zs-section-body" });
 
-    const fixAllBtn = body.createEl("button", {
+    const buttonRow = body.createDiv({ cls: "zs-vault-button-row" });
+
+    const fixAllBtn = buttonRow.createEl("button", {
       text: "Fix All",
       cls: "zodsidian-fix-btn",
     });
     fixAllBtn.addEventListener("click", () => this.onFixVault());
+
+    const stats = this.report?.stats;
+    if (stats && (stats.errorCount > 0 || stats.warningCount > 0)) {
+      const viewReportBtn = buttonRow.createEl("button", {
+        text: "View Report",
+        cls: "zodsidian-fix-btn",
+      });
+      viewReportBtn.addEventListener("click", () => this.onViewReport());
+    }
 
     if (!this.report) {
       const loader = body.createDiv({ cls: "zs-cube-loader" });
