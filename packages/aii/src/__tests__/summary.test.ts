@@ -51,6 +51,17 @@ describe("aii summary", () => {
     }
   });
 
+  it("staleDrafts has the expected bucket shape with numeric counts", async () => {
+    await summaryCommand(FIXTURES);
+    const result = output as { staleDrafts: Record<string, number> };
+    expect(result.staleDrafts).toMatchObject({
+      lt7d: expect.any(Number),
+      "7to30d": expect.any(Number),
+      "30to90d": expect.any(Number),
+      gt90d: expect.any(Number),
+    });
+  });
+
   it("brokenRefs entries have sourceFile, targetId, and field", async () => {
     await summaryCommand(FIXTURES);
     const result = output as {
